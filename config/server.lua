@@ -62,7 +62,6 @@ return {
     ---@type table<TableName, ColumnName>
     characterDataTables = {
         players = 'citizenid',
-        apartments = 'citizenid',
         bank_accounts_new = 'id',
         crypto_transactions = 'citizenid',
         phone_invoices = 'citizenid',
@@ -75,16 +74,15 @@ return {
         player_vehicles = 'citizenid',
     }, -- Rows to be deleted when the character is deleted
 
-
     server = {
         pvp = true, -- Enable or disable pvp on the server (Ability to shoot other players)
         closed = false, -- Set server closed (no one can join except people with ace permission 'qbadmin.join')
         closedReason = 'Server Closed', -- Reason message to display when people can't join the server
         whitelist = false, -- Enable or disable whitelist on the server
         whitelistPermission = 'admin', -- Permission that's able to enter the server when the whitelist is on
-        discord = '', -- Discord invite link
+        discord = 'https://discord.gg/initialrp', -- Discord invite link
         checkDuplicateLicense = true, -- Check for duplicate rockstar license on join
-        permissions = { 'god', 'admin', 'mod' }, -- Add as many groups as you want here after creating them in your server.cfg
+        permissions = { 'owner', 'developper', 'staff', 'helper' }, -- Add as many groups as you want here after creating them in your server.cfg
     },
 
     characters = {
@@ -97,37 +95,33 @@ return {
 
     ---@type { name: string, amount: integer, metadata: fun(source: number): table }[]
     starterItems = { -- Character starting items
-        { name = 'phone', amount = 1 },
-        { name = 'id_card', amount = 1, metadata = function(source)
-                if GetResourceState('qbx_idcard') ~= 'started' then
-                    error('qbx_idcard resource not found. Required to give an id_card as a starting item')
-                end
-                return exports.qbx_idcard:GetMetaLicense(source, {'id_card'})
-            end
-        },
-        { name = 'driver_license', amount = 1, metadata = function(source)
-                if GetResourceState('qbx_idcard') ~= 'started' then
-                    error('qbx_idcard resource not found. Required to give an id_card as a starting item')
-                end
-                return exports.qbx_idcard:GetMetaLicense(source, {'driver_license'})
-            end
-        },
+        -- { name = 'phone', amount = 1 },
+        -- { name = 'id_card', amount = 1, metadata = function(source)
+        --         if GetResourceState('qbx_idcard') ~= 'started' then
+        --             error('qbx_idcard resource not found. Required to give an id_card as a starting item')
+        --         end
+        --         return exports.qbx_idcard:GetMetaLicense(source, {'id_card'})
+        --     end
+        -- },
+        -- { name = 'driver_license', amount = 1, metadata = function(source)
+        --         if GetResourceState('qbx_idcard') ~= 'started' then
+        --             error('qbx_idcard resource not found. Required to give an id_card as a starting item')
+        --         end
+        --         return exports.qbx_idcard:GetMetaLicense(source, {'driver_license'})
+        --     end
+        -- },
     },
 
     -- this configuration is for core events only. putting other webhooks here will have no effect
     logging = {
         webhook = {
             ['default'] = nil, -- default
-            ['joinleave'] = nil, -- default
-            ['ooc'] = nil, -- default
-            ['anticheat'] = nil, -- default
-            ['playermoney'] = nil, -- default
         },
         role = {} -- Role to tag for high priority logs. Roles use <@%roleid> and users/channels are <@userid/channelid>
     },
 
     giveVehicleKeys = function(src, plate)
-        return exports.qbx_vehiclekeys:GiveKeys(src, plate)
+        return exports['qb-vehiclekeys']:GiveKeys(src, plate)
     end,
 
     getSocietyAccount = function(accountName)

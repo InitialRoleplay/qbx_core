@@ -18,11 +18,16 @@ client_scripts {
     'client/events.lua',
     'client/character.lua',
     'client/discord.lua',
+
     'bridge/qb/client/main.lua',
+    'bridge/qb/client/menu.lua',
+    'bridge/qb/client/input.lua',
+    'bridge/phone/client/main.lua',
 }
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
+
     'server/main.lua',
     'server/functions.lua',
     'server/player.lua',
@@ -31,11 +36,14 @@ server_scripts {
     'server/loops.lua',
     'server/storage.lua',
     'server/character.lua',
+
     'bridge/qb/server/main.lua',
+    'bridge/phone/server/main.lua',
 }
 
 files {
     'modules/*.lua',
+
     'shared/gangs.lua',
     'shared/items.lua',
     'shared/jobs.lua',
@@ -43,11 +51,14 @@ files {
     'shared/main.lua',
     'shared/vehicles.lua',
     'shared/weapons.lua',
+
     'bridge/qb/client/functions.lua',
     'bridge/qb/client/drawtext.lua',
     'bridge/qb/client/events.lua',
     'bridge/qb/shared/main.lua',
     'bridge/qb/shared/export-function.lua',
+    'bridge/qb/shared/convert-function.lua',
+
     'config/client.lua',
     'config/shared.lua',
     'locales/*.json'

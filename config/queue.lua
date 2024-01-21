@@ -26,8 +26,12 @@ return {
     ---If a player doesn't pass any predicate and a sub-queue with no predicate does not exist they will not be let into the server unless a player slot is available.
     ---@type SubQueueConfig[]
     subQueues = {
-        { name = 'Admin Queue', predicate = function(source) return HasPermission(source, 'admin') end, cardOptions = { color = 'good' } },
-        { name = 'Regular Queue' },
+        {
+            name = 'File d\'attente normale',
+            predicate = function(source)
+                return exports.initial_bot:isRolePresent(source, "931052536285233184")
+            end,
+        },
     },
 
     ---Cosmetic emojis shown along with the elapsed queue time.
@@ -61,15 +65,15 @@ return {
 
         local progressTextReplacements = {
             [1] = {
-                text = 'Queue',
+                text = 'File d\'attente',
                 color = 'good',
             },
             [playerColumn + 1] = {
-                text = 'You',
+                text = 'Vous',
                 color = 'good',
             },
             [progressAmount + 2] = {
-                text = 'Server',
+                text = 'Serveur',
                 color = 'good',
             },
         }
@@ -117,7 +121,7 @@ return {
                 },
                 {
                     type = 'TextBlock',
-                    text = ('Joining %s'):format(serverName),
+                    text = ('En train de rejoindre %s'):format(serverName),
                     spacing = 'none',
                     horizontalAlignment = 'center',
                     size = 'medium',

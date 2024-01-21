@@ -11,7 +11,7 @@ lib.addCommand('tp', {
         { name = locale("command.tp.params.y.name"), help = locale("command.tp.params.y.help"), optional = true },
         { name = locale("command.tp.params.z.name"), help = locale("command.tp.params.z.help"), optional = true }
     },
-    restricted = "group.admin"
+    restricted = "group.staff"
 }, function(source, args)
     if args[locale("command.tp.params.x.name")] and not args[locale("command.tp.params.y.name")] and not args[locale("command.tp.params.z.name")] then
         local target = GetPlayerPed(tonumber(args[locale("command.tp.params.x.name")]) --[[@as number]])
@@ -39,14 +39,14 @@ end)
 
 lib.addCommand('tpm', {
     help = locale("command.tpm.help"),
-    restricted = "group.admin"
+    restricted = "group.staff"
 }, function(source)
     TriggerClientEvent('QBCore:Command:GoToMarker', source)
 end)
 
 lib.addCommand('togglepvp', {
     help = locale("command.togglepvp.help"),
-    restricted = "group.admin"
+    restricted = "group.staff"
 }, function()
     config.server.pvp = not config.server.pvp
     GlobalState.PVPEnabled = config.server.pvp
@@ -60,7 +60,7 @@ lib.addCommand('addpermission', {
         {name = locale("command.addpermission.params.id.name"), help = locale("command.addpermission.params.id.help")},
         {name = locale("command.addpermission.params.permission.name"), help = locale("command.addpermission.params.permission.help")}
     },
-    restricted = "group.admin"
+    restricted = "group.staff"
 }, function(source, args)
     local player = GetPlayer(tonumber(args[locale("command.addpermission.params.id.name")]) --[[@as number]])
     local permission = tostring(args[locale("command.addpermission.params.permission.name")])
@@ -77,7 +77,7 @@ lib.addCommand('removepermission', {
         { name = locale("command.removepermission.params.id.name"), help = locale("command.removepermission.params.id.help") },
         { name = locale("command.removepermission.params.permission.name"), help = locale("command.removepermission.params.permission.help") }
     },
-    restricted = "group.admin"
+    restricted = "group.staff"
 }, function(source, args)
     local player = GetPlayer(tonumber(args[locale("command.removepermission.params.id.name")]) --[[@as number]])
     local permission = tostring(args[locale("command.removepermission.params.permission.name")])
@@ -92,7 +92,7 @@ end)
 
 lib.addCommand('openserver', {
     help = locale("command.openserver.help"),
-    restricted = "group.admin"
+    restricted = "group.staff"
 }, function(source)
     if not config.server.closed then
         Notify(source, locale('error.server_already_open'), 'error')
@@ -111,7 +111,7 @@ lib.addCommand('closeserver', {
     params = {
         { name = locale("command.closeserver.params.reason.name"), help = locale("command.closeserver.params.reason.help")}
     },
-    restricted = "group.admin"
+    restricted = "group.staff"
 }, function(source, args)
     if config.server.closed then
         Notify(source, locale('error.server_already_closed'), 'error')
@@ -139,7 +139,7 @@ lib.addCommand('car', {
     params = {
         { name = locale("command.car.params.model.name"), help = locale("command.car.params.model.help") }
     },
-    restricted = "group.admin"
+    restricted = "group.staff"
 }, function(source, args)
     if not args then return end
     local netId = SpawnVehicle(source, args[locale("command.car.params.model.name")], nil, true)
@@ -149,7 +149,7 @@ end)
 
 lib.addCommand('dv', {
     help = locale("command.dv.help"),
-    restricted = 'group.admin'
+    restricted = 'group.staff'
 }, function(source)
     local ped = GetPlayerPed(source)
     local pedCar = GetVehiclePedIsIn(ped, false)
@@ -176,7 +176,7 @@ lib.addCommand('givemoney', {
         { name = locale("command.givemoney.params.moneytype.name"), help = locale("command.givemoney.params.moneytype.help") },
         { name = locale("command.givemoney.params.amount.name"), help = locale("command.givemoney.params.amount.help") }
     },
-    restricted = "group.admin"
+    restricted = "group.staff"
 }, function(source, args)
     local player = GetPlayer(tonumber(args[locale("command.givemoney.params.id.name")]) --[[@as number]])
     if not player then
@@ -193,7 +193,7 @@ lib.addCommand('setmoney', {
         { name = locale("command.setmoney.params.moneytype.name"), help = locale("command.setmoney.params.moneytype.help") },
         { name = locale("command.setmoney.params.amount.name"), help = locale("command.setmoney.params.amount.help") }
     },
-    restricted = "group.admin"
+    restricted = "group.staff"
 }, function(source, args)
     local player = GetPlayer(tonumber(args[locale("command.setmoney.params.id.name")]) --[[@as number]])
     if not player then
@@ -218,7 +218,7 @@ lib.addCommand('setjob', {
         { name = locale("command.setjob.params.job.name"), help = locale("command.setjob.params.job.help") },
         { name = locale("command.setjob.params.grade.name"), help = locale("command.setjob.params.grade.help"), optional = true }
     },
-    restricted = "group.admin"
+    restricted = "group.staff"
 }, function(source, args)
     local player = GetPlayer(tonumber(args[locale("command.setjob.params.id.name")]) --[[@as number]])
     if not player then
@@ -248,7 +248,7 @@ lib.addCommand('setgang', {
         { name = locale("command.setgang.params.gang.name"), help = locale("command.setgang.params.gang.help") },
         { name = locale("command.setgang.params.grade.name"), help = locale("command.setgang.params.grade.help"), optional = true }
     },
-    restricted = "group.admin"
+    restricted = "group.staff"
 }, function(source, args)
     local player = GetPlayer(tonumber(args[locale("command.setgang.params.id.name")]) --[[@as number]])
     if not player then
@@ -333,12 +333,12 @@ end)
 
 lib.addCommand('logout', {
     help = locale('info.logout_command_help'),
-    restricted = 'group.admin',
+    restricted = 'group.staff',
 }, Logout)
 
 lib.addCommand('deletechar', {
     help = locale('info.deletechar_command_help'),
-    restricted = 'group.admin',
+    restricted = 'group.staff',
     params = {
         { name = 'id', help = locale('info.deletechar_command_arg_player_id'), type = 'number' },
     }

@@ -125,9 +125,15 @@ function CheckPlayerData(source, playerData)
         date = nil
     }
     playerData.metadata.licences = playerData.metadata.licences or {
-        id = true,
-        driver = true,
-        weapon = false,
+        driver_license_bike = true,
+        driver_license_car = true,
+        driver_license_truck = true,
+        driver_license_boat = true,
+        driver_license_helicopter = true,
+        driver_license_plane = true,
+        weapon_license_small = true,
+        weapon_license_medium = true,
+        weapon_license_big = true,
     }
     playerData.metadata.inside = playerData.metadata.inside or {
         house = nil,
