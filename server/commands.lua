@@ -166,7 +166,7 @@ lib.addCommand('dv', {
     params = {
         { name = locale('command.dv.params.radius.name'), type = 'number', help = locale('command.dv.params.radius.help'), optional = true }
     },
-    restricted = 'group.admin'
+    restricted = 'group.staff'
 }, function(source, args)
     local ped = GetPlayerPed(source)
     local pedCars = {GetVehiclePedIsIn(ped, false)}
