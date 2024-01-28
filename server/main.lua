@@ -1,8 +1,6 @@
 lib.versionCheck('Qbox-project/qbx_core')
 if not lib.checkDependency('ox_lib', '3.10.0', true) then error() return end
 
-lib.locale()
-
 ---@type 'strict'|'relaxed'|'inactive'
 local bucketLockDownMode = GetConvar('qbx:bucketlockdownmode', 'inactive')
 SetRoutingBucketEntityLockdownMode(0, bucketLockDownMode)
@@ -120,7 +118,7 @@ exports('GetVehiclesByHash', GetVehiclesByHash)
 
 ---@return table<string, Vehicle[]>
 function GetVehiclesByCategory()
-	return MapTableBySubfield('category', QBX.Shared.Vehicles)
+	return qbx.table.mapBySubfield(QBX.Shared.Vehicles, 'category')
 end
 
 exports('GetVehiclesByCategory', GetVehiclesByCategory)

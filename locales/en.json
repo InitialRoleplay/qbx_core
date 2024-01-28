@@ -98,10 +98,16 @@
         "car": {
             "help": "Spawn Vehicle (Admin Only)",
             "params": {
-                "model": { "name": "model", "help": "Model name of the vehicle" }
+                "model": { "name": "model", "help": "Model name of the vehicle" },
+                "keepCurrentVehicle": { "name": "keepCurrentVehicle", "help": "Keep the vehicle you're in right now (leave empty to delete current vehicle)" }
             }
         },
-        "dv": { "help": "Delete Vehicle (Admin Only)" },
+        "dv": {
+            "help": "Delete Vehicle (Admin Only)",
+            "params": {
+                "radius": { "name": "radius", "help": "Radius to delete vehicles in (meters)" }
+            }
+        },
         "givemoney": {
             "help": "Give A Player Money (Admin Only)",
             "params": {
