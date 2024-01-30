@@ -166,6 +166,7 @@ functions.IsWearingGloves = qbx.isWearingGloves
 
 ---@deprecated use lib.getClosestPlayer from ox_lib
 functions.GetClosestPlayer = function(coords)
+    coords = type(coords) == 'table' and vec3(coords.x, coords.y, coords.z) or coords or GetEntityCoords(cache.ped)
     local playerId, _, playerCoords = lib.getClosestPlayer(coords)
     local playerDistance = #(coords - playerCoords)
     return playerId, playerDistance
