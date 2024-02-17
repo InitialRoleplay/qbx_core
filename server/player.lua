@@ -1,6 +1,7 @@
 local config = require 'config.server'
 local defaultSpawn = require 'config.shared'.defaultSpawn
 local logger = require 'modules.logger'
+local storage = require 'server.storage.main'
 
 ---@class PlayerData : PlayerEntity
 ---@field source? Source present if player is online
@@ -28,7 +29,7 @@ exports('Login', Login)
 function LoginV2(source, citizenid, newData)
     if citizenid then
         local license, license2 = GetPlayerIdentifierByType(source --[[@as string]], 'license'), GetPlayerIdentifierByType(source --[[@as string]], 'license2')
-        local playerData = FetchPlayerEntity(citizenid)
+        local playerData = storage.fetchPlayerEntity(citizenid)
         if playerData and (license2 == playerData.license or license == playerData.license) then
             return CheckPlayerData(source, playerData)
         else
@@ -53,7 +54,7 @@ end
 ---@return Player? player if found in storage
 function GetOfflinePlayer(citizenid)
     if not citizenid then return end
-    local playerData = FetchPlayerEntity(citizenid)
+    local playerData = storage.fetchPlayerEntity(citizenid)
     if not playerData then return end
     return CheckPlayerData(nil, playerData)
 end
@@ -147,21 +148,21 @@ function CheckPlayerData(source, playerData)
         InstalledApps = {},
     }
     -- Job
-    if playerData.job and playerData.job.name and not QBX.Shared.Jobs[playerData.job.name] then playerData.job = nil end
+    if playerData.job and playerData.job.name and not GetJob(playerData.job.name) then playerData.job = nil end
     playerData.job = playerData.job or {}
     playerData.job.name = playerData.job.name or 'unemployed'
     playerData.job.label = playerData.job.label or 'Civilian'
     playerData.job.payment = playerData.job.payment or 10
     playerData.job.type = playerData.job.type or 'none'
     if QBX.Shared.ForceJobDefaultDutyAtLogin or playerData.job.onduty == nil then
-        playerData.job.onduty = QBX.Shared.Jobs[playerData.job.name].defaultDuty
+        playerData.job.onduty = GetJob(playerData.job.name).defaultDuty
     end
     playerData.job.isboss = playerData.job.isboss or false
     playerData.job.grade = playerData.job.grade or {}
     playerData.job.grade.name = playerData.job.grade.name or 'Freelancer'
     playerData.job.grade.level = playerData.job.grade.level or 0
     -- Gang
-    if playerData.gang and playerData.gang.name and not QBX.Shared.Gangs[playerData.gang.name] then playerData.gang = nil end
+    if playerData.gang and playerData.gang.name and not GetGang(playerData.gang.name) then playerData.gang = nil end
     playerData.gang = playerData.gang or {}
     playerData.gang.name = playerData.gang.name or 'none'
     playerData.gang.label = playerData.gang.label or 'No Gang Affiliation'
@@ -239,13 +240,13 @@ function CreatePlayer(playerData, Offline)
     function self.Functions.SetJob(job, grade)
         job = job or ''
         grade = tonumber(grade) or 0
-        if not QBX.Shared.Jobs[job] then return false end
+        if not GetJob(job) then return false end
         self.PlayerData.job.name = job
-        self.PlayerData.job.label = QBX.Shared.Jobs[job].label
-        self.PlayerData.job.onduty = QBX.Shared.Jobs[job].defaultDuty
-        self.PlayerData.job.type = QBX.Shared.Jobs[job].type or 'none'
-        if QBX.Shared.Jobs[job].grades[grade] then
-            local jobgrade = QBX.Shared.Jobs[job].grades[grade]
+        self.PlayerData.job.label = GetJob(job).label
+        self.PlayerData.job.onduty = GetJob(job).defaultDuty
+        self.PlayerData.job.type = GetJob(job).type or 'none'
+        if GetJob(job).grades[grade] then
+            local jobgrade = GetJob(job).grades[grade]
             self.PlayerData.job.grade = {}
             self.PlayerData.job.grade.name = jobgrade.name
             self.PlayerData.job.grade.level = grade
@@ -274,11 +275,11 @@ function CreatePlayer(playerData, Offline)
     function self.Functions.SetGang(gang, grade)
         gang = gang or ''
         grade = tonumber(grade) or 0
-        if not QBX.Shared.Gangs[gang] then return false end
+        if not GetGang(gang) then return false end
         self.PlayerData.gang.name = gang
-        self.PlayerData.gang.label = QBX.Shared.Gangs[gang].label
-        if QBX.Shared.Gangs[gang].grades[grade] then
-            local ganggrade = QBX.Shared.Gangs[gang].grades[grade]
+        self.PlayerData.gang.label = GetGang(gang).label
+        if GetGang(gang).grades[grade] then
+            local ganggrade = GetGang(gang).grades[grade]
             self.PlayerData.gang.grade = {}
             self.PlayerData.gang.grade.name = ganggrade.name
             self.PlayerData.gang.grade.level = grade
@@ -354,7 +355,7 @@ function CreatePlayer(playerData, Offline)
     ---@return boolean success if money was added
     function self.Functions.AddMoney(moneytype, amount, reason)
         reason = reason or 'unknown'
-        amount = tonumber(amount) --[[@as number]]
+        amount = qbx.math.round(tonumber(amount)) --[[@as number]]
         if amount < 0 then return false end
         if not self.PlayerData.money[moneytype] then return false end
         self.PlayerData.money[moneytype] = self.PlayerData.money[moneytype] + amount
@@ -384,7 +385,7 @@ function CreatePlayer(playerData, Offline)
     ---@return boolean success if money was removed
     function self.Functions.RemoveMoney(moneytype, amount, reason)
         reason = reason or 'unknown'
-        amount = tonumber(amount) --[[@as number]]
+        amount = qbx.math.round(tonumber(amount)) --[[@as number]]
         if amount < 0 then return false end
         if not self.PlayerData.money[moneytype] then return false end
         for _, mtype in pairs(config.money.dontAllowMinus) do
@@ -424,7 +425,7 @@ function CreatePlayer(playerData, Offline)
     ---@return boolean success if money was set
     function self.Functions.SetMoney(moneytype, amount, reason)
         reason = reason or 'unknown'
-        amount = tonumber(amount) --[[@as number]]
+        amount = qbx.math.round(tonumber(amount)) --[[@as number]]
         if amount < 0 then return false end
         if not self.PlayerData.money[moneytype] then return false end
         local difference = amount - self.PlayerData.money[moneytype]
@@ -474,6 +475,67 @@ function CreatePlayer(playerData, Offline)
         Logout(self.PlayerData.source)
     end
 
+    AddEventHandler('qbx_core:server:onJobUpdate', function(jobName, job)
+        if self.PlayerData.job.name ~= jobName then return end
+        if not job then
+            self.Functions.setJob('unemployed', 0)
+            return
+        end
+        self.PlayerData.job.label = job.label
+        self.PlayerData.job.type = job.type or 'none'
+        local jobGrade = job.grades[self.PlayerData.job.grade.level]
+        if jobGrade then
+            self.PlayerData.job.grade.name = jobGrade.name
+            self.PlayerData.job.payment = jobGrade.payment or 30
+            self.PlayerData.job.isboss = jobGrade.isboss or false
+        else
+            self.PlayerData.job.grade = {
+                name = 'No Grades',
+                level = 0,
+                payment = 30,
+                isboss = false,
+            }
+        end
+
+        if not self.Offline then
+            self.Functions.UpdatePlayerData()
+            TriggerEvent('QBCore:Server:OnJobUpdate', self.PlayerData.source, self.PlayerData.job)
+            TriggerClientEvent('QBCore:Client:OnJobUpdate', self.PlayerData.source, self.PlayerData.job)
+        end
+    end)
+
+    AddEventHandler('qbx_core:server:onGangUpdate', function(gangName, gang)
+        if self.PlayerData.gang.name ~= gangName then return end
+        if not gang then
+            self.PlayerData.gang = {
+                name = 'none',
+                label = 'No Gang Affiliation',
+                isboss = false,
+                grade = {
+                    name = 'none',
+                    level = 0
+                }
+            }
+        else
+            self.PlayerData.gang.label = gang.label
+            local gangGrade = gang.grades[self.PlayerData.gang.grade.level]
+            if gangGrade then
+                self.PlayerData.gang.isboss = gangGrade.isboss or false
+            else
+                self.PlayerData.gang.grade = {
+                    name = 'No Grades',
+                    level = 0,
+                }
+                self.PlayerData.gang.isboss = false
+            end
+        end
+        if not self.Offline then
+            self.Functions.UpdatePlayerData()
+            TriggerEvent('QBCore:Server:OnGangUpdate', self.PlayerData.source, self.PlayerData.gang)
+            TriggerClientEvent('QBCore:Client:OnGangUpdate', self.PlayerData.source, self.PlayerData.gang)
+        end
+    end)
+
     if not self.Offline then
         QBX.Players[self.PlayerData.source] = self
         local ped = GetPlayerPed(self.PlayerData.source)
@@ -509,7 +571,7 @@ function Save(source)
     playerData.metadata.armor = GetPedArmour(ped)
 
     CreateThread(function()
-        UpsertPlayerEntity({
+        storage.upsertPlayerEntity({
             playerEntity = playerData,
             position = pcoords,
         })
@@ -528,7 +590,7 @@ function SaveOffline(playerData)
     end
 
     CreateThread(function()
-        UpsertPlayerEntity({
+        storage.upsertPlayerEntity({
             playerEntity = playerData,
             position = playerData.position.xyz
         })
@@ -543,10 +605,10 @@ exports('SaveOffline', SaveOffline)
 ---@param citizenid string
 function DeleteCharacter(source, citizenid)
     local license, license2 = GetPlayerIdentifierByType(source --[[@as string]], 'license'), GetPlayerIdentifierByType(source --[[@as string]], 'license2')
-    local result = FetchPlayerEntity(citizenid).license
+    local result = storage.fetchPlayerEntity(citizenid).license
     if license == result or license2 == result then
         CreateThread(function()
-            local success = DeletePlayerEntity(citizenid)
+            local success = storage.deletePlayer(citizenid)
             if success then
                 logger.log({
                     source = 'qbx_core',
@@ -572,7 +634,7 @@ end
 
 ---@param citizenid string
 function ForceDeleteCharacter(citizenid)
-    local result = FetchPlayerEntity(citizenid).license
+    local result = storage.fetchPlayerEntity(citizenid).license
     if result then
         local player = GetPlayerByCitizenId(citizenid)
         if player then
@@ -580,7 +642,7 @@ function ForceDeleteCharacter(citizenid)
         end
 
         CreateThread(function()
-            local success = DeletePlayerEntity(citizenid)
+            local success = storage.deletePlayer(citizenid)
             if success then
                 logger.log({
                     source = 'qbx_core',
@@ -604,7 +666,7 @@ function GenerateUniqueIdentifier(type)
     local table = config.player.identifierTypes[type]
     repeat
         uniqueId = table.valueFunction()
-        isUnique = FetchIsUnique(type, uniqueId)
+        isUnique = storage.fetchIsUnique(type, uniqueId)
     until isUnique
     return uniqueId
 end

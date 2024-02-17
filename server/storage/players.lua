@@ -11,7 +11,7 @@ local characterDataTables = require 'config.server'.characterDataTables
 ---@field expiration integer epoch second that the ban will expire
 
 ---@param request InsertBanRequest
-function InsertBanEntity(request)
+local function insertBan(request)
     if not request.discordId and not request.ip and not request.license then
         error("no identifier provided")
     end
@@ -53,7 +53,7 @@ end
 
 ---@param request GetBanRequest
 ---@return BanEntity?
-function FetchBanEntity(request)
+local function fetchBan(request)
     local column, value = getBanId(request)
     local result = MySQL.single.await('SELECT * FROM bans WHERE ' ..column.. ' = ?', { value })
     return result and {
@@ -63,7 +63,7 @@ function FetchBanEntity(request)
 end
 
 ---@param request GetBanRequest
-function DeleteBanEntity(request)
+local function deleteBan(request)
     local column, value = getBanId(request)
     MySQL.query.await('DELETE FROM bans WHERE ' ..column.. ' = ?', { value })
 end
@@ -73,7 +73,7 @@ end
 ---@field position vector3
 
 ---@param request UpsertPlayerRequest
-function UpsertPlayerEntity(request)
+local function upsertPlayerEntity(request)
     MySQL.insert.await('INSERT INTO players (citizenid, cid, license, name, money, charinfo, job, gang, position, metadata) VALUES (:citizenid, :cid, :license, :name, :money, :charinfo, :job, :gang, :position, :metadata) ON DUPLICATE KEY UPDATE name = :name, money = :money, charinfo = :charinfo, job = :job, gang = :gang, position = :position, metadata = :metadata', {
         citizenid = request.playerEntity.citizenid,
         cid = request.playerEntity.charinfo.cid,
@@ -172,7 +172,7 @@ end
 
 ---@param citizenId string
 ---@return PlayerSkin?
-function FetchPlayerSkin(citizenId)
+local function fetchPlayerSkin(citizenId)
     return MySQL.single.await('SELECT * FROM playerskins WHERE citizenid = ? AND active = 1', {citizenId})
 end
 
@@ -185,7 +185,7 @@ end
 ---@param license2 string
 ---@param license? string
 ---@return PlayerEntity[]
-function FetchAllPlayerEntities(license2, license)
+local function fetchAllPlayerEntities(license2, license)
     ---@type PlayerEntity[]
     local chars = {}
     ---@type PlayerEntityDatabase[]
@@ -205,7 +205,7 @@ end
 
 ---@param citizenId string
 ---@return PlayerEntity?
-function FetchPlayerEntity(citizenId)
+local function fetchPlayerEntity(citizenId)
     ---@type PlayerEntityDatabase
     local player = MySQL.prepare.await('SELECT * FROM players where citizenid = ?', { citizenId })
     local charinfo = json.decode(player.charinfo)
@@ -226,7 +226,7 @@ end
 ---deletes character data using the characterDataTables object in the config file
 ---@param citizenId string
 ---@return boolean success if operation is successful.
-function DeletePlayerEntity(citizenId)
+local function deletePlayer(citizenId)
     local query = "DELETE FROM %s WHERE %s = ?"
     local queries = {}
 
@@ -247,7 +247,7 @@ end
 ---@param type UniqueIdType
 ---@param value string|number
 ---@return boolean isUnique if the value does not already exist in storage for the given type
-function FetchIsUnique(type, value)
+local function fetchIsUnique(type, value)
     local typeToColumn = {
         citizenid = "citizenid",
         AccountNumber = "JSON_VALUE(charinfo, '$.account')",
@@ -260,3 +260,84 @@ function FetchIsUnique(type, value)
     local count = MySQL.prepare.await('SELECT COUNT(*) as count FROM players WHERE ' .. typeToColumn[type] .. ' = ?', { value })
     return count == 0
 end
+
+---@param citizenid string
+---@param type GroupType type
+---@param group string
+---@param grade integer
+local function addToGroup(citizenid, type, group, grade)
+    MySQL.insert('INSERT INTO player_groups (citizenid, type, `group`, grade) VALUES (:citizenid, :type, :group, :grade) ON DUPLICATE KEY UPDATE grade = :grade', {
+        citizenid = citizenid,
+        type = type,
+        group = group,
+        grade = grade,
+    })
+end
+
+---@param citizenid string
+---@param group string
+---@param grade integer
+local function addPlayerToJob(citizenid, group, grade)
+    addToGroup(citizenid, GroupType.JOB, group, grade)
+end
+
+---@param citizenid string
+---@param group string
+---@param grade integer
+local function addPlayerToGang(citizenid, group, grade)
+    addToGroup(citizenid, GroupType.GANG, group, grade)
+end
+
+---@param citizenid string
+---@return table<string, integer> jobs
+---@return table<string, integer> gangs
+local function fetchPlayerGroups(citizenid)
+    local groups = MySQL.query.await('SELECT `group`, type, grade FROM player_groups WHERE citizenid = ?', {citizenid})
+    local jobs = {}
+    local gangs = {}
+    for i = 1, #groups do
+        local group = groups[i]
+        if group.type == GroupType.JOB then
+            jobs[group.group] = group.grade
+        else
+            gangs[group.group] = group.grade
+        end
+    end
+    return jobs, gangs
+end
+
+---@param citizenid string
+---@param type GroupType
+---@param group string
+local function removeFromGroup(citizenid, type, group)
+    MySQL.query.await('DELETE FROM player_groups WHERE citizenid = ? AND type = ? AND `group` = ?', {citizenid, type, group})
+end
+
+---@param citizenid string
+---@param group string
+local function removePlayerFromJob(citizenid, group)
+    removeFromGroup(citizenid, GroupType.JOB, group)
+end
+
+---@param citizenid string
+---@param group string
+local function removePlayerFromGang(citizenid, group)
+    removeFromGroup(citizenid, GroupType.GANG, group)
+end
+
+return {
+    insertBan = insertBan,
+    fetchBan = fetchBan,
+    deleteBan = deleteBan,
+    upsertPlayerEntity = upsertPlayerEntity,
+    fetchPlayerSkin = fetchPlayerSkin,
+    fetchPlayerEntity = fetchPlayerEntity,
+    fetchAllPlayerEntities = fetchAllPlayerEntities,
+    deletePlayer = deletePlayer,
+    fetchIsUnique = fetchIsUnique,
+    addPlayerToJob = addPlayerToJob,
+    addPlayerToGang = addPlayerToGang,
+    fetchPlayerGroups = fetchPlayerGroups,
+    removePlayerFromJob = removePlayerFromJob,
+    removePlayerFromGang = removePlayerFromGang,
+}
