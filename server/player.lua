@@ -2,8 +2,12 @@ local config = require 'config.server'
 local defaultSpawn = require 'config.shared'.defaultSpawn
 local logger = require 'modules.logger'
 local storage = require 'server.storage.main'
+local maxJobsPerPlayer = GetConvarInt('qbx:max_jobs_per_player', 1)
+local maxGangsPerPlayer = GetConvarInt('qbx:max_gangs_per_player', 1)
 
 ---@class PlayerData : PlayerEntity
+---@field jobs table<string, integer>
+---@field gangs table<string, integer>
 ---@field source? Source present if player is online
 ---@field optin? boolean present if player is online
 
@@ -13,42 +17,36 @@ local storage = require 'server.storage.main'
 ---@return boolean success
 function Login(source, citizenid, newData)
     if not source or source == '' then
-        lib.print.error('QBX.PLAYER.LOGIN - NO SOURCE GIVEN!')
+        lib.print.error('No source given at login stage')
         return false
     end
-    return LoginV2(source, citizenid, newData) and true or false
-end
 
-exports('Login', Login)
-
----On player login get their data or set defaults
----@param source Source
----@param citizenid? string
----@param newData? PlayerEntity
----@return Player? player if logged in successfully
-function LoginV2(source, citizenid, newData)
     if citizenid then
         local license, license2 = GetPlayerIdentifierByType(source --[[@as string]], 'license'), GetPlayerIdentifierByType(source --[[@as string]], 'license2')
         local playerData = storage.fetchPlayerEntity(citizenid)
         if playerData and (license2 == playerData.license or license == playerData.license) then
-            return CheckPlayerData(source, playerData)
+            return not not CheckPlayerData(source, playerData)
         else
-            DropPlayer(tostring(source), locale("info.exploit_dropped"))
+            DropPlayer(tostring(source), locale('info.exploit_dropped'))
             logger.log({
                 source = 'qbx_core',
-                webhook = config.logging.webhook['anticheat'],
+                webhook = config.logging.webhook.anticheat,
                 event = 'Anti-Cheat',
                 color = 'white',
                 tags = config.logging.role,
-                message = ('%s Has Been Dropped For Character Joining Exploit'):format(GetPlayerName(source))
+                message = ('%s has been dropped for character joining exploit'):format(GetPlayerName(source))
             })
         end
     else
         local player = CheckPlayerData(source, newData)
         player.Functions.Save()
-        return player
+        return true
     end
+
+    return false
 end
+
+exports('Login', Login)
 
 ---@param citizenid string
 ---@return Player? player if found in storage
@@ -60,6 +58,244 @@ function GetOfflinePlayer(citizenid)
 end
 
 exports('GetOfflinePlayer', GetOfflinePlayer)
+
+---@param jobName string
+---@param job Job
+---@param grade integer
+---@return PlayerJob
+local function toPlayerJob(jobName, job, grade)
+    return {
+        name = jobName,
+        label = job.label,
+        isboss = job.grades[grade].isboss or false,
+        onduty = job.defaultDuty or false,
+        payment = job.grades[grade].payment or 0,
+        type = job.type,
+        grade = {
+            name = job.grades[grade].name,
+            level = grade
+        }
+    }
+end
+
+---Sets a player's job to be primary only if they already have it.
+---@param citizenid string
+---@param jobName string
+local function setPlayerPrimaryJob(citizenid, jobName)
+    local player = GetPlayerByCitizenId(citizenid) or GetOfflinePlayer(citizenid)
+    if not player then
+        error(("player not found with citizenid %s"):format(citizenid))
+    end
+    local grade = jobName == 'unemployed' and 0 or player.PlayerData.jobs[jobName]
+    if not grade then
+        error(("player %s does not have job %s"):format(citizenid, jobName))
+    end
+    local job = GetJob(jobName)
+    if not job then
+        error("job not found: " .. jobName)
+    end
+
+    if not job.grades[grade] then
+        error(("job %s does not have grade %s"):format(jobName, grade))
+    end
+
+    player.PlayerData.job = toPlayerJob(jobName, job, grade)
+    player.Functions.Save()
+    if not player.Offline then
+        player.Functions.UpdatePlayerData()
+        TriggerEvent('QBCore:Server:OnJobUpdate', player.PlayerData.source, player.PlayerData.job)
+        TriggerClientEvent('QBCore:Client:OnJobUpdate', player.PlayerData.source, player.PlayerData.job)
+    end
+end
+
+exports('SetPlayerPrimaryJob', setPlayerPrimaryJob)
+
+---Adds a player to the job or overwrites their grade for a job already held
+---@param citizenid string
+---@param jobName string
+---@param grade integer
+local function addPlayerToJob(citizenid, jobName, grade)
+    -- unemployed job is the default, so players cannot be added to it
+    if jobName == 'unemployed' then return end
+    local job = GetJob(jobName)
+    if not job then
+        error("job not found: " .. jobName)
+    end
+    if not job.grades[grade] then
+        error(("job %s does not have grade %s"):format(jobName, grade))
+    end
+    local player = GetPlayerByCitizenId(citizenid) or GetOfflinePlayer(citizenid)
+    if not player then
+        error(("player not found with citizenid %s"):format(citizenid))
+    end
+    if player.PlayerData.jobs[jobName] == grade then return end
+    if #player.PlayerData.jobs >= maxJobsPerPlayer and not player.PlayerData.jobs[jobName] then
+        error("player already has maximum amount of jobs allowed")
+    end
+
+    storage.addPlayerToJob(citizenid, jobName, grade)
+    if not player.Offline then
+        player.PlayerData.jobs[jobName] = grade
+        player.Functions.SetPlayerData('jobs', player.PlayerData.jobs)
+    end
+    if player.PlayerData.job.name == jobName then
+        setPlayerPrimaryJob(citizenid, jobName)
+    end
+end
+
+exports('AddPlayerToJob', addPlayerToJob)
+
+---If the job removed from is primary, sets the primary job to unemployed.
+---@param citizenid string
+---@param jobName string
+local function removePlayerFromJob(citizenid, jobName)
+    -- Unemployed is the default job, so players cannot be removed from it.
+    if jobName == 'unemployed' then return end
+    local player = GetPlayerByCitizenId(citizenid) or GetOfflinePlayer(citizenid)
+    if not player then
+        error(("player not found with citizenid %s"):format(citizenid))
+    end
+
+    if not player.PlayerData.jobs[jobName] then return end
+
+    storage.removePlayerFromJob(citizenid, jobName)
+    player.PlayerData.jobs[jobName] = nil
+    if player.PlayerData.job.name == jobName then
+        local job = GetJob('unemployed')
+        if not job then
+            error("cannot find unemployed job. Check database/config")
+        end
+        toPlayerJob('unemployed', job, 0)
+        player.Functions.Save()
+    end
+
+    if not player.Offline then
+        player.Functions.SetPlayerData('jobs', player.PlayerData.jobs)
+    end
+end
+
+exports('RemovePlayerFromJob', removePlayerFromJob)
+
+---Sets a player's gang to be primary only if they already have it.
+---@param citizenid string
+---@param gangName string
+local function setPlayerPrimaryGang(citizenid, gangName)
+    local player = GetPlayerByCitizenId(citizenid) or GetOfflinePlayer(citizenid)
+    if not player then
+        error(("player not found with citizenid %s"):format(citizenid))
+    end
+    local grade = gangName == 'none' and 0 or player.PlayerData.gangs[gangName]
+    if not grade then
+        error(("player %s does not have gang %s"):format(citizenid, gangName))
+    end
+    local gang = GetGang(gangName)
+    if not gang then
+        error("gang not found: " .. gangName)
+    end
+
+    if not gang.grades[grade] then
+        error(("gang %s does not have grade %s"):format(gangName, grade))
+    end
+
+    player.PlayerData.gang = {
+        name = gangName,
+        label = gang.label,
+        isboss = gang.grades[grade].isboss,
+        grade = {
+            name = gang.grades[grade].name,
+            level = grade
+        }
+    }
+
+    player.Functions.Save()
+
+    if not player.Offline then
+        player.Functions.UpdatePlayerData()
+        TriggerEvent('QBCore:Server:OnGangUpdate', player.PlayerData.source, player.PlayerData.gang)
+        TriggerClientEvent('QBCore:Client:OnGangUpdate', player.PlayerData.source, player.PlayerData.gang)
+    end
+end
+
+exports('SetPlayerPrimaryGang', setPlayerPrimaryGang)
+
+---Adds a player to the gang or overwrites their grade if already in the gang
+---@param citizenid string
+---@param gangName string
+---@param grade integer
+local function addPlayerToGang(citizenid, gangName, grade)
+    -- None is the default gang, so players cannot be added to it.
+    if gangName == 'none' then return end
+    local gang = GetGang(gangName)
+
+    if not gang then
+        error("gang not found: " .. gangName)
+    end
+
+    if not gang.grades[grade] then
+        error(("gang %s does not have grade %s"):format(gangName, grade))
+    end
+
+    local player = GetPlayerByCitizenId(citizenid) or GetOfflinePlayer(citizenid)
+    if not player then
+        error(("player not found with citizenid %s"):format(citizenid))
+    end
+
+    if player.PlayerData.gangs[gangName] == grade then return end
+
+    if #player.PlayerData.gangs >= maxGangsPerPlayer and not player.PlayerData.gangs[gangName] then
+        error("player already has maximum amount of gangs allowed")
+    end
+
+    storage.addPlayerToGang(citizenid, gangName, grade)
+    if not player.Offline then
+        player.PlayerData.gangs[gangName] = grade
+        player.Functions.SetPlayerData('gangs', player.PlayerData.gangs)
+    end
+    if player.PlayerData.gang.name == gangName then
+        setPlayerPrimaryGang(citizenid, gangName)
+    end
+end
+
+exports('AddPlayerToGang', addPlayerToGang)
+
+---Remove a player from a gang, setting them to the default no gang.
+---@param citizenid string
+---@param gangName string
+local function removePlayerFromGang(citizenid, gangName)
+    -- None is the default gang. So players cannot be removed from it.
+    if gangName == 'none' then return end
+    local player = GetPlayerByCitizenId(citizenid) or GetOfflinePlayer(citizenid)
+    if not player then
+        error(("player not found with citizenid %s"):format(citizenid))
+    end
+
+    if not player.PlayerData.gangs[gangName] then return end
+
+    storage.removePlayerFromGang(citizenid, gangName)
+    player.PlayerData.gangs[gangName] = nil
+    if player.PlayerData.gang.name == gangName then
+        local gang = GetGang('none')
+        if not gang then
+            error("cannot find none gang. Check database/config")
+        end
+        player.PlayerData.gang = {
+            name = gangName,
+            label = gang.label,
+            isboss = false,
+            grade = {
+                name = gang.grades[0].name,
+                level = 0
+            }
+        }
+        player.Functions.Save()
+    end
+
+    if not player.Offline then
+        player.Functions.SetPlayerData('gangs', player.PlayerData.gangs)
+    end
+end
+
+exports('RemovePlayerFromGang', removePlayerFromGang)
 
 ---@param source? integer if player is online
 ---@param playerData? PlayerEntity|PlayerData
@@ -147,30 +383,41 @@ function CheckPlayerData(source, playerData)
         SerialNumber = GenerateUniqueIdentifier('SerialNumber'),
         InstalledApps = {},
     }
-    -- Job
-    if playerData.job and playerData.job.name and not GetJob(playerData.job.name) then playerData.job = nil end
-    playerData.job = playerData.job or {}
-    playerData.job.name = playerData.job.name or 'unemployed'
-    playerData.job.label = playerData.job.label or 'Civilian'
-    playerData.job.payment = playerData.job.payment or 10
-    playerData.job.type = playerData.job.type or 'none'
-    if QBX.Shared.ForceJobDefaultDutyAtLogin or playerData.job.onduty == nil then
-        playerData.job.onduty = GetJob(playerData.job.name).defaultDuty
+    local jobs, gangs = storage.fetchPlayerGroups(playerData.citizenid)
+
+    local job = GetJob(playerData.job?.name) or GetJob('unemployed')
+    if not job then
+        error("unemployed job not found. Is it in your config?")
     end
-    playerData.job.isboss = playerData.job.isboss or false
-    playerData.job.grade = playerData.job.grade or {}
-    playerData.job.grade.name = playerData.job.grade.name or 'Freelancer'
-    playerData.job.grade.level = playerData.job.grade.level or 0
-    -- Gang
-    if playerData.gang and playerData.gang.name and not GetGang(playerData.gang.name) then playerData.gang = nil end
-    playerData.gang = playerData.gang or {}
-    playerData.gang.name = playerData.gang.name or 'none'
-    playerData.gang.label = playerData.gang.label or 'No Gang Affiliation'
-    playerData.gang.isboss = playerData.gang.isboss or false
-    playerData.gang.grade = playerData.gang.grade or {}
-    playerData.gang.grade.name = playerData.gang.grade.name or 'none'
-    playerData.gang.grade.level = playerData.gang.grade.level or 0
-    -- Other
+    local jobGrade = GetJob(playerData.job?.name) and playerData.job.grade.level or 0
+    playerData.job = {
+        name = playerData.job?.name or 'unemployed',
+        label = job.label,
+        payment = job.grades[jobGrade].payment or 0,
+        type = job.type,
+        onduty = QBX.Shared.ForceJobDefaultDutyAtLogin and job.defaultDuty or playerData.job?.onduty or false,
+        isboss = job.grades[jobGrade].isboss or false,
+        grade = {
+            name = job.grades[jobGrade].name,
+            level = jobGrade,
+        }
+    }
+    playerData.jobs = jobs or {}
+    local gang = GetGang(playerData.gang?.name) or GetGang('none')
+    if not gang then
+        error("none gang not found. Is it in your config?")
+    end
+    local gangGrade = GetGang(playerData.gang?.name) and playerData.gang.grade.level or 0
+    playerData.gang = {
+        name = playerData.gang?.name or 'none',
+        label = gang.label,
+        isboss = gang.grades[gangGrade].isboss or false,
+        grade = {
+            name = gang.grades[gangGrade].name,
+            level = gangGrade
+        }
+    }
+    playerData.gangs = gangs or {}
     playerData.position = playerData.position or defaultSpawn
     playerData.items = GetResourceState('qb-inventory') ~= 'missing' and exports['qb-inventory']:LoadInventory(playerData.source, playerData.citizenid) or {}
     return CreatePlayer(playerData --[[@as PlayerData]], Offline)
@@ -234,69 +481,47 @@ function CreatePlayer(playerData, Offline)
         TriggerClientEvent('QBCore:Player:SetPlayerData', self.PlayerData.source, self.PlayerData)
     end
 
-    ---@param job string name
-    ---@param grade integer
+    ---Overwrites current primary job with a new job. Removing the player from their current primary job
+    ---@param jobName string name
+    ---@param grade? integer defaults to 0
     ---@return boolean success if job was set
-    function self.Functions.SetJob(job, grade)
-        job = job or ''
-        grade = tonumber(grade) or 0
-        if not GetJob(job) then return false end
-        self.PlayerData.job.name = job
-        self.PlayerData.job.label = GetJob(job).label
-        self.PlayerData.job.onduty = GetJob(job).defaultDuty
-        self.PlayerData.job.type = GetJob(job).type or 'none'
-        if GetJob(job).grades[grade] then
-            local jobgrade = GetJob(job).grades[grade]
-            self.PlayerData.job.grade = {}
-            self.PlayerData.job.grade.name = jobgrade.name
-            self.PlayerData.job.grade.level = grade
-            self.PlayerData.job.payment = jobgrade.payment or 30
-            self.PlayerData.job.isboss = jobgrade.isboss or false
-        else
-            self.PlayerData.job.grade = {}
-            self.PlayerData.job.grade.name = 'No Grades'
-            self.PlayerData.job.grade.level = 0
-            self.PlayerData.job.payment = 30
-            self.PlayerData.job.isboss = false
+    function self.Functions.SetJob(jobName, grade)
+        jobName = jobName:lower()
+        grade = grade or 0
+        local job = GetJob(jobName)
+        if not job then
+            lib.print.error(("cannot set job. Job %s does not exist"):format(jobName))
+            return false
         end
-
-        if not self.Offline then
-            self.Functions.UpdatePlayerData()
-            TriggerEvent('QBCore:Server:OnJobUpdate', self.PlayerData.source, self.PlayerData.job)
-            TriggerClientEvent('QBCore:Client:OnJobUpdate', self.PlayerData.source, self.PlayerData.job)
+        if not job.grades[grade] then
+            lib.print.error(("cannot set job. Job %s does not have grade %s"):format(jobName, grade))
+            return false
         end
-
+        removePlayerFromJob(self.PlayerData.citizenid, self.PlayerData.job.name)
+        addPlayerToJob(self.PlayerData.citizenid, jobName, grade)
+        setPlayerPrimaryJob(self.PlayerData.citizenid, jobName)
         return true
     end
 
-    ---@param gang string name
-    ---@param grade integer
+    ---Removes the player from their current primary gang and adds the player to the new gang
+    ---@param gangName string name
+    ---@param grade? integer defaults to 0
     ---@return boolean success if gang was set
-    function self.Functions.SetGang(gang, grade)
-        gang = gang or ''
-        grade = tonumber(grade) or 0
-        if not GetGang(gang) then return false end
-        self.PlayerData.gang.name = gang
-        self.PlayerData.gang.label = GetGang(gang).label
-        if GetGang(gang).grades[grade] then
-            local ganggrade = GetGang(gang).grades[grade]
-            self.PlayerData.gang.grade = {}
-            self.PlayerData.gang.grade.name = ganggrade.name
-            self.PlayerData.gang.grade.level = grade
-            self.PlayerData.gang.isboss = ganggrade.isboss or false
-        else
-            self.PlayerData.gang.grade = {}
-            self.PlayerData.gang.grade.name = 'No Grades'
-            self.PlayerData.gang.grade.level = 0
-            self.PlayerData.gang.isboss = false
+    function self.Functions.SetGang(gangName, grade)
+        gangName = gangName:lower()
+        grade = grade or 0
+        local gang = GetGang(gangName)
+        if not gang then
+            lib.print.error(("cannot set gang. Gang %s does not exist"):format(gangName))
+            return false
         end
-
-        if not self.Offline then
-            self.Functions.UpdatePlayerData()
-            TriggerEvent('QBCore:Server:OnGangUpdate', self.PlayerData.source, self.PlayerData.gang)
-            TriggerClientEvent('QBCore:Client:OnGangUpdate', self.PlayerData.source, self.PlayerData.gang)
+        if not gang.grades[grade] then
+            lib.print.error(("cannot set gang. Gang %s does not have grade %s"):format(gangName, grade))
+            return false
         end
-
+        removePlayerFromGang(self.PlayerData.citizenid, self.PlayerData.gang.name)
+        addPlayerToGang(self.PlayerData.citizenid, gangName, grade)
+        setPlayerPrimaryGang(self.PlayerData.citizenid, gangName)
         return true
     end
 
@@ -355,7 +580,7 @@ function CreatePlayer(playerData, Offline)
     ---@return boolean success if money was added
     function self.Functions.AddMoney(moneytype, amount, reason)
         reason = reason or 'unknown'
-        amount = qbx.math.round(tonumber(amount)) --[[@as number]]
+        amount = qbx.math.round(tonumber(amount) --[[@as number]])
         if amount < 0 then return false end
         if not self.PlayerData.money[moneytype] then return false end
         self.PlayerData.money[moneytype] = self.PlayerData.money[moneytype] + amount
@@ -385,7 +610,7 @@ function CreatePlayer(playerData, Offline)
     ---@return boolean success if money was removed
     function self.Functions.RemoveMoney(moneytype, amount, reason)
         reason = reason or 'unknown'
-        amount = qbx.math.round(tonumber(amount)) --[[@as number]]
+        amount = qbx.math.round(tonumber(amount) --[[@as number]])
         if amount < 0 then return false end
         if not self.PlayerData.money[moneytype] then return false end
         for _, mtype in pairs(config.money.dontAllowMinus) do
@@ -425,7 +650,7 @@ function CreatePlayer(playerData, Offline)
     ---@return boolean success if money was set
     function self.Functions.SetMoney(moneytype, amount, reason)
         reason = reason or 'unknown'
-        amount = qbx.math.round(tonumber(amount)) --[[@as number]]
+        amount = qbx.math.round(tonumber(amount) --[[@as number]])
         if amount < 0 then return false end
         if not self.PlayerData.money[moneytype] then return false end
         local difference = amount - self.PlayerData.money[moneytype]

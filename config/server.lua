@@ -130,5 +130,5 @@ return {
 
     removeSocietyMoney = function(accountName, payment)
         return exports['Renewed-Banking']:removeAccountMoney(accountName, payment)
-    end
+    end,
 }

@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS `players` (
   KEY `id` (`id`),
   KEY `last_updated` (`last_updated`),
   KEY `license` (`license`)
-) ENGINE=InnoDB AUTO_INCREMENT=1;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `bans` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS `bans` (
   KEY `license` (`license`),
   KEY `discord` (`discord`),
   KEY `ip` (`ip`)
-) ENGINE=InnoDB AUTO_INCREMENT=1;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `player_contacts` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -41,23 +41,7 @@ CREATE TABLE IF NOT EXISTS `player_contacts` (
   `iban` varchar(50) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `citizenid` (`citizenid`)
-) ENGINE=InnoDB AUTO_INCREMENT=1;
-
-CREATE TABLE IF NOT EXISTS `groups` (
-	`name` VARCHAR(50) NOT NULL,
-	`type` VARCHAR(50) NOT NULL,
-	`data` LONGTEXT NOT NULL,
-	PRIMARY KEY (`name`, `type`)
-) ENGINE=InnoDB;
-
-CREATE TABLE IF NOT EXISTS `group_grades` (
-	`group` VARCHAR(50) NOT NULL,
-	`type` VARCHAR(50) NOT NULL,
-	`grade` TINYINT(3) UNSIGNED NOT NULL,
-	`data` LONGTEXT NOT NULL,
-	PRIMARY KEY (`group`, `grade`, `type`),
-	CONSTRAINT `fk_groups` FOREIGN KEY (`group`, `type`) REFERENCES `groups` (`name`, `type`) ON UPDATE CASCADE ON DELETE CASCADE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `player_groups` (
 	`citizenid` VARCHAR(50) NOT NULL,
@@ -65,6 +49,5 @@ CREATE TABLE IF NOT EXISTS `player_groups` (
 	`type` VARCHAR(50) NOT NULL,
 	`grade` TINYINT(3) UNSIGNED NOT NULL,
 	PRIMARY KEY (`citizenid`, `type`, `group`),
-	CONSTRAINT `fk_citizenid` FOREIGN KEY (`citizenid`) REFERENCES `players` (`citizenid`) ON UPDATE CASCADE ON DELETE CASCADE,
-	CONSTRAINT `fk_grade` FOREIGN KEY (`group`, `type`, `grade`) REFERENCES `group_grades` (`group`, `type`, `grade`) ON UPDATE CASCADE ON DELETE CASCADE
-) ENGINE=InnoDB;
+	CONSTRAINT `fk_citizenid` FOREIGN KEY (`citizenid`) REFERENCES `players` (`citizenid`) ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
