@@ -114,7 +114,7 @@ exports('SetPlayerPrimaryJob', setPlayerPrimaryJob)
 ---@param citizenid string
 ---@param jobName string
 ---@param grade integer
-local function addPlayerToJob(citizenid, jobName, grade)
+function AddPlayerToJob(citizenid, jobName, grade)
     -- unemployed job is the default, so players cannot be added to it
     if jobName == 'unemployed' then return end
     local job = GetJob(jobName)
@@ -143,7 +143,7 @@ local function addPlayerToJob(citizenid, jobName, grade)
     end
 end
 
-exports('AddPlayerToJob', addPlayerToJob)
+exports('AddPlayerToJob', AddPlayerToJob)
 
 ---If the job removed from is primary, sets the primary job to unemployed.
 ---@param citizenid string
@@ -165,7 +165,7 @@ local function removePlayerFromJob(citizenid, jobName)
         if not job then
             error("cannot find unemployed job. Check database/config")
         end
-        toPlayerJob('unemployed', job, 0)
+        player.PlayerData.job = toPlayerJob('unemployed', job, 0)
         player.Functions.Save()
     end
 
@@ -222,7 +222,7 @@ exports('SetPlayerPrimaryGang', setPlayerPrimaryGang)
 ---@param citizenid string
 ---@param gangName string
 ---@param grade integer
-local function addPlayerToGang(citizenid, gangName, grade)
+function AddPlayerToGang(citizenid, gangName, grade)
     -- None is the default gang, so players cannot be added to it.
     if gangName == 'none' then return end
     local gang = GetGang(gangName)
@@ -256,7 +256,7 @@ local function addPlayerToGang(citizenid, gangName, grade)
     end
 end
 
-exports('AddPlayerToGang', addPlayerToGang)
+exports('AddPlayerToGang', AddPlayerToGang)
 
 ---Remove a player from a gang, setting them to the default no gang.
 ---@param citizenid string
@@ -431,6 +431,7 @@ function Logout(source)
 
     local player = GetPlayer(source)
     if not player then return end
+    player.PlayerData.lastLoggedOut = os.time()
     player.Functions.Save()
 
     Wait(200)
@@ -498,7 +499,7 @@ function CreatePlayer(playerData, Offline)
             return false
         end
         removePlayerFromJob(self.PlayerData.citizenid, self.PlayerData.job.name)
-        addPlayerToJob(self.PlayerData.citizenid, jobName, grade)
+        AddPlayerToJob(self.PlayerData.citizenid, jobName, grade)
         setPlayerPrimaryJob(self.PlayerData.citizenid, jobName)
         return true
     end
@@ -520,7 +521,7 @@ function CreatePlayer(playerData, Offline)
             return false
         end
         removePlayerFromGang(self.PlayerData.citizenid, self.PlayerData.gang.name)
-        addPlayerToGang(self.PlayerData.citizenid, gangName, grade)
+        AddPlayerToGang(self.PlayerData.citizenid, gangName, grade)
         setPlayerPrimaryGang(self.PlayerData.citizenid, gangName)
         return true
     end
