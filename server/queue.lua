@@ -1,280 +1,114 @@
 if GetConvar('qbx:enablequeue', 'true') == 'false' then return false end
 
--- Disable hardcap because it kicks the player when the server is full
+local Queue = require 'server.queue.main'
+local Webhook = require 'server.queue.webhook'
 
----@param resource string
-AddEventHandler('onResourceStarting', function(resource)
-    if resource == 'hardcap' then
-        lib.print.info('Preventing hardcap from starting...')
-        CancelEvent()
-    end
-end)
-
-if GetResourceState('hardcap'):find('start') then
-    lib.print.info('Stopping hardcap...')
+if GetResourceState('hardcap') == 'started' then
     StopResource('hardcap')
 end
 
--- Queue code
-
-local config = require 'config.queue'
-local maxPlayers = GlobalState.MaxPlayers
-
--- destructure frequently used config options
-local waitingEmojis = config.waitingEmojis
-local waitingEmojiCount = #waitingEmojis
-local useAdaptiveCard = config.useAdaptiveCard
-local generateCard = config.generateCard
-
----@class SubQueue : SubQueueConfig
----@field positions table<string, number> Player license to sub-queue position map.
----@field size number
-
----@type SubQueue[]
-local subQueues = {}
-for i = 1, #config.subQueues do
-    subQueues[i] = {
-        name = config.subQueues[i].name,
-        predicate = config.subQueues[i].predicate,
-        cardOptions = config.subQueues[i].cardOptions,
-        positions = {},
-        size = 0,
-    }
-end
-
----@class PlayerQueueData
----@field waitingSeconds number
----@field subQueueIndex number
----@field globalPos number
-
----Player license to queue data map.
----@type table<string, PlayerQueueData>
-local playerDatas = {}
-local totalQueueSize = 0
-
----@param license string
----@param subQueueIndex number
-local function enqueue(license, subQueueIndex)
-    local subQueue = subQueues[subQueueIndex]
-
-    subQueue.size += 1
-    subQueue.positions[license] = subQueue.size
-
-    local globalPos = subQueue.size
-    -- increase set the global position of the current player by the sizes of sub-queues the player comes after
-    for i = 1, subQueueIndex - 1 do
-        globalPos += subQueues[i].size
-    end
-
-    totalQueueSize += 1
-    playerDatas[license] = {
-        waitingSeconds = 0,
-        subQueueIndex = subQueueIndex,
-        globalPos = globalPos,
-    }
-
-    -- inrease the global positions of players who are in sub-queues that come after the current player
-    for i = subQueueIndex + 1, #subQueues do
-        for k in pairs(subQueues[i].positions) do
-            playerDatas[k].globalPos += 1
-        end
-    end
-end
-
----@param license string
-local function dequeue(license)
-    local subQueueIndex = playerDatas[license].subQueueIndex
-    local subQueue = subQueues[subQueueIndex]
-    local subQueuePos = subQueue.positions[license]
-
-    subQueue.size -= 1
-    subQueue.positions[license] = nil
-
-    totalQueueSize -= 1
-    playerDatas[license] = nil
-
-    -- decrease the positions of players who are after the current player in the same sub-queue
-    for k, v in pairs(subQueue.positions) do
-        if v > subQueuePos then
-            subQueue.positions[k] -= 1
-            playerDatas[k].globalPos -= 1
-        end
-    end
-
-    -- decrease the global positions of players who are in sub-queues that come after the current player
-    for i = subQueueIndex + 1, #subQueues do
-        for k in pairs(subQueues[i].positions) do
-            playerDatas[k].globalPos -= 1
-        end
-    end
-end
-
----Map of player licenses that passed the queue and are downloading server content.
----Needs to be saved because these players won't be part of regular player counts such as `GetNumPlayerIndices`.
----@type table<string, { source: Source, timestamp: integer }>
-local joiningPlayers = {}
-local joiningPlayerCount = 0
-
----@param license string
-local function removePlayerJoining(license)
-    if joiningPlayers[license] then
-        joiningPlayerCount -= 1
-    end
-    joiningPlayers[license] = nil
-end
-
----@param license string
-local function awaitPlayerJoinsOrDisconnects(license)
-    local joiningData
-    while true do
-        joiningData = joiningPlayers[license]
-        if not joiningData then return end
-
-        -- wait until the player finally joins or disconnects while installing server content
-        -- this may result in waiting ~2 additional minutes if the player disconnects as FXServer will think that the player exists
-        while DoesPlayerExist(joiningData.source --[[@as string]]) do
-            Wait(1000)
-        end
-
-        -- wait until either the player reconnects or was disconnected for too long
-        while joiningPlayers[license] and joiningPlayers[license].source == joiningData.source and (os.time() - joiningData.timestamp) < config.joiningTimeoutSeconds do
-            Wait(1000)
-        end
-
-        -- if the player disconnected for too long stop waiting for them
-        if joiningPlayers[license] and joiningPlayers[license].source == joiningData.source then
-            removePlayerJoining(license)
-            break
-        end
-    end
-end
-
----@param source Source
----@param license string
-local function updatePlayerJoining(source, license)
-    if not joiningPlayers[license] then
-        joiningPlayerCount += 1
-    end
-    joiningPlayers[license] = { source = source, timestamp = os.time() }
-end
-
----@type table<string, true>
-local timingOut = {}
-
----@param license string
----@return boolean shouldDequeue
-local function awaitPlayerTimeout(license)
-    timingOut[license] = true
-
-    Wait(config.timeoutSeconds * 1000)
-
-    -- if timeout data wasn't consumed then the player hasn't reconnected
-    if timingOut[license] then
-        timingOut[license] = nil
-        return true
-    end
-
-    return false
-end
-
----@param license string
----@return boolean playerTimingOut
-local function isPlayerTimingOut(license)
-    local playerTimingOut = timingOut[license] or false
-    timingOut[license] = nil
-    return playerTimingOut
-end
-
----@param waitingSeconds number
----@param waitingEmojiIndex number
-local function createDisplayTime(waitingSeconds, waitingEmojiIndex)
-    local minutes = math.floor(waitingSeconds / 60)
-    local seconds = waitingSeconds % 60
-    return ('%02d:%02d %s'):format(minutes, seconds, waitingEmojis[waitingEmojiIndex])
-end
-
----@param source Source
----@param license string
----@param deferrals Deferrals
-local function awaitPlayerQueue(source, license, deferrals)
-    if joiningPlayers[license] then
-        -- the player was in the middle of joining, so let them in
-        updatePlayerJoining(source, license)
-        deferrals.done()
+AddEventHandler('playerConnecting', function(name, _, deferrals)
+    local tempId = source
+    lib.print.debug(string.format('%s is connecting', name))
+    local identifier = GetPlayerIdentifierByType(source, 'discord')
+    identifier = identifier and identifier:gsub('discord:', '')
+    if not identifier then
+        deferrals.done("Nous n'avons pas pu trouver votre identifiant Discord, veuillez vous assurer que vous avez bien lié votre compte Discord à votre FiveM.")
+        lib.print.debug(string.format('%s failed to provide a Discord identifier', name))
         return
     end
 
-    local playerTimingOut = isPlayerTimingOut(license)
-    local data = playerDatas[license]
+    Queue:AddToQueue(tempId, identifier, deferrals)
+end)
 
-    if data and not playerTimingOut then
-        deferrals.done(locale('error.already_in_queue'))
+AddEventHandler('playerDropped', function(reason)
+    local identifier = GetPlayerIdentifierByType(source, 'discord')
+    identifier = identifier and identifier:gsub('discord:', '')
+    if not identifier then
         return
     end
 
-    if not playerTimingOut then
-        local subQueueIndex
-        for i = 1, #subQueues do
-            local predicate = subQueues[i].predicate
-            if not predicate or predicate(source) then
-                subQueueIndex = i
-                break
-            end
-        end
+    Queue:AddToGrace(identifier)
+end)
 
-        if not subQueueIndex then
-            deferrals.done(locale('error.no_subqueue'))
-            return
-        end
+AddEventHandler('onResourceStart', function(resourceName)
+    if resourceName ~= "hardcap" then return end
 
-        enqueue(license, subQueueIndex)
-        data = playerDatas[license]
-    end
+    StopResource(resourceName)
+end)
 
-    local waitingEmojiIndex = 1 -- for updating the waiting emoji
-    local subQueue = subQueues[data.subQueueIndex]
-
-    -- wait until the player disconnected or until there are available slots and the player is first in queue
-    while DoesPlayerExist(source --[[@as string]]) and ((GetNumPlayerIndices() + joiningPlayerCount) >= maxPlayers or data.globalPos > 1) do
-        local displayTime = createDisplayTime(data.waitingSeconds, waitingEmojiIndex)
-
-        if useAdaptiveCard then
-            deferrals.presentCard(generateCard({
-                subQueue = subQueue,
-                globalPos = data.globalPos,
-                totalQueueSize = totalQueueSize,
-                displayTime = displayTime,
-            }))
-        else
-            deferrals.update(locale('info.in_queue', data.globalPos, totalQueueSize, subQueue.name, displayTime))
-        end
-
-        data.waitingSeconds += 1
-        waitingEmojiIndex += 1
-
-        if waitingEmojiIndex > waitingEmojiCount then
-            waitingEmojiIndex = 1
-        end
-
-        Wait(1000)
-    end
-
-    -- if the player disconnected while waiting in queue
-    if not DoesPlayerExist(source --[[@as string]]) then
-        if awaitPlayerTimeout(license) then
-            dequeue(license)
-        end
-        return
-    end
-
-    updatePlayerJoining(source, license)
-    dequeue(license)
-    deferrals.done()
-
-    awaitPlayerJoinsOrDisconnects(license)
-end
-
-return {
-    awaitPlayerQueue = awaitPlayerQueue,
-    removePlayerJoining = removePlayerJoining,
+local presetColors = {
+    default = 0,
+    teal = 0x1abc9c,
+    dark_teal = 0x11806a,
+    green = 0x2ecc71,
+    dark_green = 0x1f8b4c,
+    blue = 0x3498db,
+    dark_blue = 0x206694,
+    purple = 0x9b59b6,
+    dark_purple = 0x71368a,
+    magenta = 0xe91e63,
+    dark_magenta = 0xad1457,
+    gold = 0xf1c40f,
+    dark_gold = 0xc27c0e,
+    orange = 0xe67e22,
+    dark_orange = 0xa84300,
+    red = 0xe74c3c,
+    dark_red = 0x992d22,
+    lighter_grey = 0x95a5a6,
+    dark_grey = 0x607d8b,
+    light_grey = 0x979c9f,
+    darker_grey = 0x546e7a,
+    blurple = 0x7289da,
+    greyple = 0x99aab5
 }
+
+exports("WebhookSend", function(webhook, data, callback, wait)
+    Webhook:Send(webhook, data, callback, wait)
+end)
+
+exports("WebhookEdit", function(webhook, messageId, data, callback)
+    Webhook:EditMessage(webhook, messageId, data, callback)
+end)
+
+exports("WebhookDelete", function(webhook, messageId, callback)
+    Webhook:DeleteMessage(webhook, messageId, callback)
+end)
+
+exports("WebhookSendMessage", function(webhook, name, title, color, message, tagEveryone, callback, wait)
+    if type(color) == 'string' then
+        color = presetColors[color]
+    end
+
+    Webhook:Send(webhook, {
+        username = name,
+        avatar_url = 'https://avatars.githubusercontent.com/u/99291234?s=200&v=4',
+        content = tagEveryone and '@everyone' or nil,
+        embeds = {
+            {
+                title = title,
+                color = color,
+                description = message
+            }
+        },
+    }, callback, wait)
+end)
+
+exports("WebhookEditMessage", function(webhook, messageId, name, title, color, message, tagEveryone, callback)
+    if type(color) == 'string' then
+        color = presetColors[color]
+    end
+
+    Webhook:EditMessage(webhook, messageId, {
+        username = name,
+        avatar_url = 'https://avatars.githubusercontent.com/u/99291234?s=200&v=4',
+        content = tagEveryone and '@everyone' or nil,
+        embeds = {
+            {
+                title = title,
+                color = color,
+                description = message
+            }
+        },
+    }, callback)
+end)
