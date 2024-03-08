@@ -158,9 +158,10 @@ function Card:Build(players, queueNumber, totalInQueue)
     end
 
     local departure = os.time()
-    local arrival = departure + 6*60*60
+    local arrival = departure + 6 * 60 * 60
 
-    local flight = ("%s%s%s"):format(string.char(math.random(65, 65 + 25)), string.char(math.random(65, 65 + 25)), math.random(100, 900))
+    local flight = ("%s%s%s"):format(string.char(math.random(65, 65 + 25)), string.char(math.random(65, 65 + 25)),
+        math.random(100, 900))
 
     table.insert(body, {
         ["type"] = "ColumnSet",
@@ -200,7 +201,8 @@ function Card:Build(players, queueNumber, totalInQueue)
                     },
                     {
                         ["type"] = "TextBlock",
-                        ["text"] = ("%s:%s %s"):format(os.date("%I", departure), os.date("%M", departure), os.date("%p", departure)),
+                        ["text"] = ("%s:%s %s"):format(os.date("%I", departure), os.date("%M", departure),
+                            os.date("%p", departure)),
                         ["spacing"] = "Small",
                         ["wrap"] = true,
                         ["weight"] = "Bolder",
@@ -223,7 +225,8 @@ function Card:Build(players, queueNumber, totalInQueue)
                     },
                     {
                         ["type"] = "TextBlock",
-                        ["text"] = ("%s:%s %s"):format(os.date("%I", arrival), os.date("%M", arrival), os.date("%p", arrival)),
+                        ["text"] = ("%s:%s %s"):format(os.date("%I", arrival), os.date("%M", arrival),
+                            os.date("%p", arrival)),
                         ["spacing"] = "Small",
                         ["wrap"] = true,
                         ["weight"] = "Bolder",
@@ -283,24 +286,35 @@ function Card:Build(players, queueNumber, totalInQueue)
                 ["items"] = {
                     {
                         ["type"] = "TextBlock",
-                        ["text"] = "Arrivé",
-                        ["weight"] = "Bolder",
+                        ["text"] = "Los Angeles International Airport",
                         ["wrap"] = true,
                         ["isSubtle"] = true,
                         ["horizontalAlignment"] = "Right",
                     },
                     {
                         ["type"] = "TextBlock",
-                        ["text"] = ("%s:%s %s"):format(os.date("%I", arrival), os.date("%M", arrival), os.date("%p", arrival)),
-                        ["spacing"] = "Small",
+                        ["text"] = "LAX",
                         ["wrap"] = true,
-                        ["weight"] = "Bolder",
-                        ["color"] = "Attention",
+                        ["size"] = "ExtraLarge",
+                        ["color"] = "Accent",
                         ["horizontalAlignment"] = "Right",
                     },
                 }
             },
         },
+    })
+
+    table.insert(body, {
+        ["type"] = "ActionSet",
+        ["horizontalAlignment"] = "Center",
+        ["separator"] = true,
+        ["actions"] = {
+            {
+                ["title"] = "Discord",
+                ["type"] = "Action.OpenUrl",
+                ["url"] = "https://discord.gg/BB4b6E3STf"
+            }
+        }
     })
 
     return {

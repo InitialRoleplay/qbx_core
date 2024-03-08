@@ -49,14 +49,14 @@ local function sortQueue()
     inQueue = finalyQueueList
 end
 
-local function setAdaptiveCard(deferrals, queueNumber, totalInQueue)
-    local card = Card:Build(queueNumber, totalInQueue)
+local function setAdaptiveCard(deferrals, name, queueNumber, totalInQueue)
+    local card = Card:Build(name, queueNumber, totalInQueue)
     deferrals.presentCard(card)
 end
 
 local function updateQueueNumbers()
     for i, data in ipairs(inQueue) do
-        setAdaptiveCard(data.deferrals, i, #inQueue)
+        setAdaptiveCard(data.deferrals, GetPlayerName(data.source), i, #inQueue)
     end
 
     if displayQueueInHostname and #inQueue > 0 then
@@ -66,6 +66,7 @@ local function updateQueueNumbers()
 end
 
 local lastGhostCheck = nil
+
 local function checkForGhostPlayers()
     if lastGhostCheck and lastGhostCheck + ghostCheckInterval > os.time() then
         return
@@ -76,6 +77,7 @@ local function checkForGhostPlayers()
             table.remove(inQueue, i)
         end
     end
+
     updateQueueNumbers()
 
     lastGhostCheck = os.time()
@@ -83,7 +85,7 @@ end
 
 local function generateStatusMessage()
     return {
-        username = 'Project Sloth',
+        username = 'Initial Roleplay',
         avatar_url = 'https://avatars.githubusercontent.com/u/99291234?s=200&v=4',
         embeds = {
             {
