@@ -39,6 +39,8 @@ server_scripts {
     'server/commands.lua',
     'server/loops.lua',
     'server/character.lua',
+    'server/api/main.lua',
+    'server/api/routes/*.lua',
 
     'bridge/qb/server/main.lua',
     'bridge/phone/server/main.lua',

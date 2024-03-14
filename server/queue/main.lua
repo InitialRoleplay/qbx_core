@@ -49,14 +49,14 @@ local function sortQueue()
     inQueue = finalyQueueList
 end
 
-local function setAdaptiveCard(deferrals, queueNumber, totalInQueue)
-    local card = Card:Build(queueNumber, totalInQueue)
+local function setAdaptiveCard(deferrals, name, queueNumber, totalInQueue)
+    local card = Card:Build(name, queueNumber, totalInQueue)
     deferrals.presentCard(card)
 end
 
 local function updateQueueNumbers()
     for i, data in ipairs(inQueue) do
-        setAdaptiveCard(data.deferrals, i, #inQueue)
+        setAdaptiveCard(data.deferrals, tostring(GetPlayerName(data.source)), i, #inQueue)
     end
 
     if displayQueueInHostname and #inQueue > 0 then
@@ -66,6 +66,7 @@ local function updateQueueNumbers()
 end
 
 local lastGhostCheck = nil
+
 local function checkForGhostPlayers()
     if lastGhostCheck and lastGhostCheck + ghostCheckInterval > os.time() then
         return
@@ -76,6 +77,7 @@ local function checkForGhostPlayers()
             table.remove(inQueue, i)
         end
     end
+
     updateQueueNumbers()
 
     lastGhostCheck = os.time()
@@ -83,7 +85,7 @@ end
 
 local function generateStatusMessage()
     return {
-        username = 'Project Sloth',
+        username = 'Initial Roleplay',
         avatar_url = 'https://avatars.githubusercontent.com/u/99291234?s=200&v=4',
         embeds = {
             {
@@ -140,6 +142,7 @@ local function startQueue()
             checkForGhostPlayers()
 
             local playersInServer = #GetPlayers()
+
             if #inQueue > 0 and playersInServer < maxPlayersConvar then
                 local data = table.remove(inQueue, 1)
 
@@ -159,9 +162,12 @@ local function startQueue()
 end
 
 local onQueueAddCallbacks = {}
+
 function Queue:AddToQueue(source, identifier, deferrals)
     deferrals.defer()
     deferrals.update("Bienvenue sur Initial Roleplay, veuillez patienter pendant que nous récupérons les données nécessaires à votre démarrage !")
+
+    Wait(2500)
 
     DiscordAPI:FetchMemberInfo(identifier, function(user)
         if not user then
@@ -216,9 +222,12 @@ function Queue:AddToQueue(source, identifier, deferrals)
             deferrals = deferrals,
             index = #inQueue + 1
         })
+
         sortQueue()
         deferrals.update(string.format("Vous êtes actuellement le numéro %s dans la file d'attente, tenez bon !", #inQueue))
         updateQueueNumbers()
+
+        Wait(10000)
 
         CreateThread(function()
             for _, callback in ipairs(onQueueAddCallbacks) do

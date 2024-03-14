@@ -1,9 +1,9 @@
 ---@author 5m1Ly
 ---@credits https://github.com/5m1Ly/restfx
 
-require 'api.modules.lua_extended'
+require 'server.api.modules.lua_extended'
 local config = require 'config.api'
-local sha256 = require 'api.modules.sha256'
+local sha256 = require 'server.api.modules.sha256'
 
 local Api = {
 	lib = {},
@@ -30,13 +30,13 @@ local function catch(l, c, e, m)
 end
 
 --- Checks if the given function parameters meet the specified conditions
----@param params string table with parameters to validate
+---@param params table table with parameters to validate
 local function ParameterValidation(params)
 	local e = 'parameter'
 	local msg = 'parameter %s recieved value %s which isnt allowed. expacted value %s'
 	for i = 1, #params do
 		local p = params[i]
-		local t = type(p.value) 
+		local t = type(p.value)
 		local c = false
 		if not p.null and p.value == nil then
 			c = true
@@ -146,22 +146,34 @@ local function RequestHandler(request, response)
 			body = {}
 		}
 	}
+
 	-- set the base path and given parameters
 	call.req.temp = string.split(call.req.path.full, '/')
 	call.req.path.base = table.remove(call.req.temp, 1)
+
 	-- check if call is registered
 	if Api.calls[call.req.path.base] == nil then
-		SendResponse(call, response, 6, call.req.path.base)
+		SendResponse(call, response, 7, call.req.path.base)
 		return
 	end
+
 	-- get the registered call
 	local call_data = Api.calls[call.req.path.base]
 	call.req.path.registered = call_data.path.full
-	-- check if the incomming request method is the one set for the registerd call
-	if call_data.method ~= call.req.method then
+
+	-- check if the request method is allowed for ip
+	local address = string.split(call.req.address, ':')[1]
+	if not config.valideAdresses[address] then
 		SendResponse(call, response, 4, call.req.method, call_data.method)
 		return
 	end
+
+	-- check if the incomming request method is the one set for the registerd call
+	if call_data.method ~= call.req.method then
+		SendResponse(call, response, 5, call.req.method, call_data.method)
+		return
+	end
+
 	-- register the param values to the correct place in the request data table
 	if call_data.params ~= nil then
 		for index, temp_key in next, call_data.params do
@@ -170,13 +182,16 @@ local function RequestHandler(request, response)
 		end
 	end
 	call.req.temp = nil
+
 	-- decode request body (methods with request body: POST, PUT, DELETE, OPTIONS, PATCH)
 	request.setDataHandler(function(data)
 		call.req.jsonbody = data
 		call.req.body = jde(call.req.jsonbody)
 	end)
+
 	-- trigger the registered scallback 
 	call.res = call_data.fn(call.req, call.res)
+
 	-- check to ensure that the request body is created
 	if call.res == nil then
 		call.res = { head = {
@@ -186,6 +201,7 @@ local function RequestHandler(request, response)
 		SendResponse(call, response, 3, call.req.method)
 		return
 	end
+
 	-- send response to the client
 	SendResponse(call, response)
 end

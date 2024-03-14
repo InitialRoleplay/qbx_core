@@ -1,8 +1,8 @@
+local queue = require 'server.queue.main'
 local serverConfig = require 'config.server'.server
 local loggingConfig = require 'config.server'.logging
 local serverName = require 'config.shared'.serverName
 local logger = require 'modules.logger'
-local queue = require 'server.queue'
 
 -- Event Handler
 
@@ -20,9 +20,6 @@ AddEventHandler('playerJoining', function()
     local src = source --[[@as string]]
     local license = GetPlayerIdentifierByType(src, 'license2') or GetPlayerIdentifierByType(src, 'license')
     if not license then return end
-    if queue then
-        queue.removePlayerJoining(license)
-    end
     if not serverConfig.checkDuplicateLicense then return end
     if usedLicenses[license] then
         Wait(0) -- mandatory wait for the drop reason to show up
@@ -35,20 +32,27 @@ end)
 ---@param reason string
 AddEventHandler('playerDropped', function(reason)
     local src = source --[[@as string]]
+    local discord = GetPlayerIdentifierByType(src, 'discord')
     local license = GetPlayerIdentifierByType(src, 'license2') or GetPlayerIdentifierByType(src, 'license')
+
     if license then usedLicenses[license] = nil end
     if not QBX.Players[src] then return end
+
     GlobalState.PlayerCount -= 1
     local player = QBX.Players[src]
+
     player.PlayerData.lastLoggedOut = os.time()
     logger.log({
         source = 'qbx_core',
         webhook = loggingConfig.webhook['joinleave'],
         event = 'Dropped',
         color = 'red',
-        message = ('**%s** (%s) left...\n **Reason:** %s'):format(GetPlayerName(src), player.PlayerData.license, reason),
+        message = '**' .. GetPlayerName(src) .. '** (' .. player.PlayerData.license .. ') left..' ..'\n **Reason:** ' .. reason,
     })
+
     player.Functions.Save()
+    queue:AddToGrace(discord)
+
     QBX.Player_Buckets[player.PlayerData.license] = nil
     QBX.Players[src] = nil
 end)
@@ -65,6 +69,7 @@ end)
 ---@param deferrals Deferrals
 local function onPlayerConnecting(name, _, deferrals)
     local src = source --[[@as string]]
+    local discord = GetPlayerIdentifierByType(src, 'discord')
     local license = GetPlayerIdentifierByType(src, 'license2') or GetPlayerIdentifierByType(src, 'license')
     deferrals.defer()
 
@@ -72,7 +77,7 @@ local function onPlayerConnecting(name, _, deferrals)
     Wait(0)
 
     if serverConfig.closed then
-        if not IsPlayerAceAllowed(src, 'qbadmin.join') then
+        if not IsPlayerAceAllowed(src, 'group.staff') then
             deferrals.done(serverConfig.closedReason)
         end
     end
@@ -81,6 +86,10 @@ local function onPlayerConnecting(name, _, deferrals)
         deferrals.done(locale('error.no_valid_license'))
     elseif serverConfig.checkDuplicateLicense and usedLicenses[license] then
         deferrals.done(locale('error.duplicate_license'))
+    end
+
+    if not discord then
+        deferrals.done("Nous n'avons pas pu trouver votre identifiant Discord, veuillez vous assurer que vous avez bien lié votre compte Discord à votre FiveM.")
     end
 
     local databaseTime = os.clock()
@@ -125,11 +134,8 @@ local function onPlayerConnecting(name, _, deferrals)
         -- Mandatory wait
         Wait(0)
 
-        if queue then
-            queue.awaitPlayerQueue(src --[[@as Source]], license, deferrals)
-        else
-            deferrals.done()
-        end
+        discord = discord and discord:gsub('discord:', '')
+        queue:AddToQueue(src --[[@as Source]], discord, deferrals)
     end, onError):next(function() end, onError)
 
     -- if conducting db checks for too long then raise error
@@ -164,26 +170,26 @@ end)
 ---@param reason string
 RegisterNetEvent('QBCore:Server:CloseServer', function(reason)
     local src = source --[[@as Source]]
-    if IsPlayerAceAllowed(src --[[@as string]], 'admin') then
+    if HasPermission(src, 'admin') then
         reason = reason or 'No reason specified'
         serverConfig.closed = true
         serverConfig.closedReason = reason
         for k in pairs(QBX.Players) do
-            if not IsPlayerAceAllowed(k --[[@as string]], serverConfig.whitelistPermission) then
-                DropPlayer(k --[[@as string]], reason)
+            if not HasPermission(k, serverConfig.whitelistPermission) then
+                DropPlayer(k, reason)
             end
         end
     else
-        DropPlayer(src --[[@as string]], locale("error.no_permission"))
+        DropPlayer(src, locale("error.no_permission"))
     end
 end)
 
 RegisterNetEvent('QBCore:Server:OpenServer', function()
     local src = source --[[@as Source]]
-    if IsPlayerAceAllowed(src --[[@as string]], 'admin') then
+    if HasPermission(src, 'admin') then
         serverConfig.closed = false
     else
-        DropPlayer(src --[[@as string]], locale("error.no_permission"))
+        DropPlayer(src, locale("error.no_permission"))
     end
 end)
 
@@ -202,3 +208,5 @@ RegisterNetEvent('QBCore:ToggleDuty', function()
     end
     TriggerClientEvent('QBCore:Client:SetDuty', src, player.PlayerData.job.onduty)
 end)
+
+require 'server.queue'

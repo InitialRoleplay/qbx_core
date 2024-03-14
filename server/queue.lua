@@ -1,41 +1,4 @@
-if GetConvar('qbx:enablequeue', 'true') == 'false' then return false end
-
-local Queue = require 'server.queue.main'
 local Webhook = require 'server.queue.webhook'
-
-if GetResourceState('hardcap') == 'started' then
-    StopResource('hardcap')
-end
-
-AddEventHandler('playerConnecting', function(name, _, deferrals)
-    local tempId = source
-    lib.print.debug(string.format('%s is connecting', name))
-    local identifier = GetPlayerIdentifierByType(source, 'discord')
-    identifier = identifier and identifier:gsub('discord:', '')
-    if not identifier then
-        deferrals.done("Nous n'avons pas pu trouver votre identifiant Discord, veuillez vous assurer que vous avez bien lié votre compte Discord à votre FiveM.")
-        lib.print.debug(string.format('%s failed to provide a Discord identifier', name))
-        return
-    end
-
-    Queue:AddToQueue(tempId, identifier, deferrals)
-end)
-
-AddEventHandler('playerDropped', function(reason)
-    local identifier = GetPlayerIdentifierByType(source, 'discord')
-    identifier = identifier and identifier:gsub('discord:', '')
-    if not identifier then
-        return
-    end
-
-    Queue:AddToGrace(identifier)
-end)
-
-AddEventHandler('onResourceStart', function(resourceName)
-    if resourceName ~= "hardcap" then return end
-
-    StopResource(resourceName)
-end)
 
 local presetColors = {
     default = 0,
