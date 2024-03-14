@@ -4,6 +4,8 @@ local logger = require 'modules.logger'
 local storage = require 'server.storage.main'
 local maxJobsPerPlayer = GetConvarInt('qbx:max_jobs_per_player', 1)
 local maxGangsPerPlayer = GetConvarInt('qbx:max_gangs_per_player', 1)
+local setJobReplaces = GetConvar('qbx:setjob_replaces', 'true') == 'true'
+local setGangReplaces = GetConvar('qbx:setgang_replaces', 'true') == 'true'
 
 ---@class PlayerData : PlayerEntity
 ---@field jobs table<string, integer>
@@ -81,7 +83,7 @@ end
 ---Sets a player's job to be primary only if they already have it.
 ---@param citizenid string
 ---@param jobName string
-local function setPlayerPrimaryJob(citizenid, jobName)
+function SetPlayerPrimaryJob(citizenid, jobName)
     local player = GetPlayerByCitizenId(citizenid) or GetOfflinePlayer(citizenid)
     if not player then
         error(("player not found with citizenid %s"):format(citizenid))
@@ -108,7 +110,7 @@ local function setPlayerPrimaryJob(citizenid, jobName)
     end
 end
 
-exports('SetPlayerPrimaryJob', setPlayerPrimaryJob)
+exports('SetPlayerPrimaryJob', SetPlayerPrimaryJob)
 
 ---Adds a player to the job or overwrites their grade for a job already held
 ---@param citizenid string
@@ -129,7 +131,7 @@ function AddPlayerToJob(citizenid, jobName, grade)
         error(("player not found with citizenid %s"):format(citizenid))
     end
     if player.PlayerData.jobs[jobName] == grade then return end
-    if #player.PlayerData.jobs >= maxJobsPerPlayer and not player.PlayerData.jobs[jobName] then
+    if qbx.table.size(player.PlayerData.jobs) >= maxJobsPerPlayer and not player.PlayerData.jobs[jobName] then
         error("player already has maximum amount of jobs allowed")
     end
 
@@ -139,7 +141,7 @@ function AddPlayerToJob(citizenid, jobName, grade)
         player.Functions.SetPlayerData('jobs', player.PlayerData.jobs)
     end
     if player.PlayerData.job.name == jobName then
-        setPlayerPrimaryJob(citizenid, jobName)
+        SetPlayerPrimaryJob(citizenid, jobName)
     end
 end
 
@@ -148,7 +150,7 @@ exports('AddPlayerToJob', AddPlayerToJob)
 ---If the job removed from is primary, sets the primary job to unemployed.
 ---@param citizenid string
 ---@param jobName string
-local function removePlayerFromJob(citizenid, jobName)
+function RemovePlayerFromJob(citizenid, jobName)
     -- Unemployed is the default job, so players cannot be removed from it.
     if jobName == 'unemployed' then return end
     local player = GetPlayerByCitizenId(citizenid) or GetOfflinePlayer(citizenid)
@@ -174,7 +176,7 @@ local function removePlayerFromJob(citizenid, jobName)
     end
 end
 
-exports('RemovePlayerFromJob', removePlayerFromJob)
+exports('RemovePlayerFromJob', RemovePlayerFromJob)
 
 ---Sets a player's gang to be primary only if they already have it.
 ---@param citizenid string
@@ -242,7 +244,7 @@ function AddPlayerToGang(citizenid, gangName, grade)
 
     if player.PlayerData.gangs[gangName] == grade then return end
 
-    if #player.PlayerData.gangs >= maxGangsPerPlayer and not player.PlayerData.gangs[gangName] then
+    if qbx.table.size(player.PlayerData.gangs) >= maxGangsPerPlayer and not player.PlayerData.gangs[gangName] then
         error("player already has maximum amount of gangs allowed")
     end
 
@@ -498,9 +500,11 @@ function CreatePlayer(playerData, Offline)
             lib.print.error(("cannot set job. Job %s does not have grade %s"):format(jobName, grade))
             return false
         end
-        removePlayerFromJob(self.PlayerData.citizenid, self.PlayerData.job.name)
+        if setJobReplaces then
+            RemovePlayerFromJob(self.PlayerData.citizenid, self.PlayerData.job.name)
+        end
         AddPlayerToJob(self.PlayerData.citizenid, jobName, grade)
-        setPlayerPrimaryJob(self.PlayerData.citizenid, jobName)
+        SetPlayerPrimaryJob(self.PlayerData.citizenid, jobName)
         return true
     end
 
@@ -520,7 +524,9 @@ function CreatePlayer(playerData, Offline)
             lib.print.error(("cannot set gang. Gang %s does not have grade %s"):format(gangName, grade))
             return false
         end
-        removePlayerFromGang(self.PlayerData.citizenid, self.PlayerData.gang.name)
+        if setGangReplaces then
+            removePlayerFromGang(self.PlayerData.citizenid, self.PlayerData.gang.name)
+        end
         AddPlayerToGang(self.PlayerData.citizenid, gangName, grade)
         setPlayerPrimaryGang(self.PlayerData.citizenid, gangName)
         return true
@@ -595,7 +601,7 @@ function CreatePlayer(playerData, Offline)
                 event = 'AddMoney',
                 color = 'lightgreen',
                 tags = tags,
-                message = '**' .. GetPlayerName(self.PlayerData.source) .. ' (citizenid: ' .. self.PlayerData.citizenid .. ' | id: ' .. self.PlayerData.source .. ')** $' .. amount .. ' (' .. moneytype .. ') added, new ' .. moneytype .. ' balance: ' .. self.PlayerData.money[moneytype] .. ' reason: ' .. reason,
+                message = ('**%s (citizenid: %s | id: %s)** $%s (%s) added, new %s balance: $%s reason: %s'):format(GetPlayerName(self.PlayerData.source), self.PlayerData.citizenid, self.PlayerData.source, amount, moneytype, moneytype, self.PlayerData.money[moneytype], reason),
             })
             TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, moneytype, amount, false)
             TriggerClientEvent('QBCore:Client:OnMoneyChange', self.PlayerData.source, moneytype, amount, "add", reason)
@@ -632,7 +638,7 @@ function CreatePlayer(playerData, Offline)
                 event = 'RemoveMoney',
                 color = 'red',
                 tags = tags,
-                message = '**' .. GetPlayerName(self.PlayerData.source) .. ' (citizenid: ' .. self.PlayerData.citizenid .. ' | id: ' .. self.PlayerData.source .. ')** $' .. amount .. ' (' .. moneytype .. ') removed, new ' .. moneytype .. ' balance: ' .. self.PlayerData.money[moneytype] .. ' reason: ' .. reason,
+                message = ('** %s (citizenid: %s | id: %s)** $%s (%s) removed, new %s balance: $%s reason: %s'):format(GetPlayerName(self.PlayerData.source), self.PlayerData.citizenid, self.PlayerData.source, amount, moneytype, moneytype, self.PlayerData.money[moneytype], reason),
             })
             TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, moneytype, amount, true)
             if moneytype == 'bank' then
@@ -664,7 +670,7 @@ function CreatePlayer(playerData, Offline)
                 webhook = config.logging.webhook['playermoney'],
                 event = 'SetMoney',
                 color = 'green',
-                message = '**' .. GetPlayerName(self.PlayerData.source) .. ' (citizenid: ' .. self.PlayerData.citizenid .. ' | id: ' .. self.PlayerData.source .. ')** $' .. amount .. ' (' .. moneytype .. ') set, new ' .. moneytype .. ' balance: ' .. self.PlayerData.money[moneytype] .. ' reason: ' .. reason,
+                message = ('**%s (citizenid: %s | id: %s)** $%s (%s) set, new %s balance: $%s reason: %s'):format(GetPlayerName(self.PlayerData.source), self.PlayerData.citizenid, self.PlayerData.source, amount, moneytype, moneytype, self.PlayerData.money[moneytype], reason),
             })
             TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, moneytype, math.abs(difference), difference < 0)
             TriggerClientEvent('QBCore:Client:OnMoneyChange', self.PlayerData.source, moneytype, amount, "set", reason)
@@ -841,7 +847,7 @@ function DeleteCharacter(source, citizenid)
                     webhook = config.logging.webhook['joinleave'],
                     event = 'Character Deleted',
                     color = 'red',
-                    message = '**' .. GetPlayerName(source) .. '** ' .. license2 .. ' deleted **' .. citizenid .. '**..'
+                    message = ('**%s** deleted **%s**...'):format(GetPlayerName(source), citizenid, source),
                 })
             end
         end)
@@ -853,7 +859,7 @@ function DeleteCharacter(source, citizenid)
             event = 'Anti-Cheat',
             color = 'white',
             tags = config.logging.role,
-            message = GetPlayerName(source) .. ' Has Been Dropped For Character Deletion Exploit',
+            message = ('%s has been dropped for character deleting exploit'):format(GetPlayerName(source)),
         })
     end
 end
@@ -875,7 +881,7 @@ function ForceDeleteCharacter(citizenid)
                     webhook = config.logging.webhook['joinleave'],
                     event = 'Character Force Deleted',
                     color = 'red',
-                    message = 'Character **' .. citizenid .. '** got deleted'
+                    message = ('Character **%s** got deleted'):format(citizenid),
                 })
             end
         end)
