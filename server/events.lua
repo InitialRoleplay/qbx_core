@@ -180,7 +180,7 @@ RegisterNetEvent('QBCore:Server:CloseServer', function(reason)
             end
         end
     else
-        DropPlayer(src, locale("error.no_permission"))
+        DropPlayer(src --[[@as string]], locale('error.no_permission'))
     end
 end)
 
@@ -189,7 +189,7 @@ RegisterNetEvent('QBCore:Server:OpenServer', function()
     if HasPermission(src, 'admin') then
         serverConfig.closed = false
     else
-        DropPlayer(src, locale("error.no_permission"))
+        DropPlayer(src --[[@as string]], locale('error.no_permission'))
     end
 end)
 
