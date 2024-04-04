@@ -13,7 +13,7 @@ local characterDataTables = require 'config.server'.characterDataTables
 ---@param request InsertBanRequest
 local function insertBan(request)
     if not request.discordId and not request.ip and not request.license then
-        error("no identifier provided")
+        error('no identifier provided')
     end
 
     MySQL.insert.await('INSERT INTO bans (name, license, discord, ip, reason, expire, bannedby) VALUES (?, ?, ?, ?, ?, ?, ?)', {
@@ -32,13 +32,13 @@ end
 ---@return string value of the id
 local function getBanId(request)
     if request.license then
-        return "license", request.license
+        return 'license', request.license
     elseif request.discordId then
-        return "discord", request.discordId
+        return 'discord', request.discordId
     elseif request.ip then
-        return "ip", request.ip
+        return 'ip', request.ip
     else
-        error("no identifier provided", 2)
+        error('no identifier provided', 2)
     end
 end
 
@@ -74,7 +74,7 @@ end
 
 ---@param request UpsertPlayerRequest
 local function upsertPlayerEntity(request)
-    MySQL.insert.await('INSERT INTO players (citizenid, cid, license, name, money, charinfo, job, gang, position, metadata, lastLoggedOut) VALUES (:citizenid, :cid, :license, :name, :money, :charinfo, :job, :gang, :position, :metadata, :lastLoggedOut) ON DUPLICATE KEY UPDATE name = :name, money = :money, charinfo = :charinfo, job = :job, gang = :gang, position = :position, metadata = :metadata, lastLoggedOut = :lastLoggedOut', {
+    MySQL.insert.await('INSERT INTO players (citizenid, cid, license, name, money, charinfo, job, gang, position, metadata, last_logged_out) VALUES (:citizenid, :cid, :license, :name, :money, :charinfo, :job, :gang, :position, :metadata, :last_logged_out) ON DUPLICATE KEY UPDATE name = :name, money = :money, charinfo = :charinfo, job = :job, gang = :gang, position = :position, metadata = :metadata, last_logged_out = :last_logged_out', {
         citizenid = request.playerEntity.citizenid,
         cid = request.playerEntity.charinfo.cid,
         license = request.playerEntity.license,
@@ -85,7 +85,7 @@ local function upsertPlayerEntity(request)
         gang = json.encode(request.playerEntity.gang),
         position = json.encode(request.position),
         metadata = json.encode(request.playerEntity.metadata),
-        lastLoggedOut = os.date('%Y-%m-%d %H:%M:%S', request.playerEntity.lastLoggedOut)
+        last_logged_out = os.date('%Y-%m-%d %H:%M:%S', request.playerEntity.lastLoggedOut)
     })
 end
 
@@ -100,7 +100,7 @@ end
 ---@field position vector4
 ---@field metadata PlayerMetadata
 ---@field cid integer
----@field lastLoggedOutUnix integer
+---@field lastLoggedOut integer
 ---@field items table deprecated
 
 ---@class PlayerEntityDatabase : PlayerEntity
@@ -110,7 +110,7 @@ end
 ---@field gang? string
 ---@field position string
 ---@field metadata string
----@field last_updated integer
+---@field lastLoggedOutUnix integer
 
 ---@class PlayerCharInfo
 ---@field firstname string
@@ -192,7 +192,7 @@ local function fetchAllPlayerEntities(license2, license)
     ---@type PlayerEntity[]
     local chars = {}
     ---@type PlayerEntityDatabase[]
-    local result = MySQL.query.await('SELECT *, UNIX_TIMESTAMP(lastLoggedOut) AS lastLoggedOutUnix FROM players WHERE license = ? OR license = ?', {license, license2})
+    local result = MySQL.query.await('SELECT *, UNIX_TIMESTAMP(last_logged_out) AS lastLoggedOutUnix FROM players WHERE license = ? OR license = ?', {license, license2})
     for i = 1, #result do
         chars[i] = result[i]
         chars[i].charinfo = json.decode(result[i].charinfo)
@@ -211,7 +211,7 @@ end
 ---@return PlayerEntity?
 local function fetchPlayerEntity(citizenId)
     ---@type PlayerEntityDatabase
-    local player = MySQL.single.await('SELECT *, UNIX_TIMESTAMP(lastLoggedOut) AS lastLoggedOutUnix FROM players where citizenid = ?', { citizenId })
+    local player = MySQL.single.await('SELECT *, UNIX_TIMESTAMP(last_logged_out) AS lastLoggedOutUnix FROM players where citizenid = ?', { citizenId })
     local charinfo = json.decode(player.charinfo)
     return player and {
         citizenid = player.citizenid,
@@ -232,7 +232,7 @@ end
 ---@param citizenId string
 ---@return boolean success if operation is successful.
 local function deletePlayer(citizenId)
-    local query = "DELETE FROM %s WHERE %s = ?"
+    local query = 'DELETE FROM %s WHERE %s = ?'
     local queries = {}
 
     for tableName, columnName in pairs(characterDataTables) do
@@ -254,7 +254,7 @@ end
 ---@return boolean isUnique if the value does not already exist in storage for the given type
 local function fetchIsUnique(type, value)
     local typeToColumn = {
-        citizenid = "citizenid",
+        citizenid = 'citizenid',
         AccountNumber = "JSON_VALUE(charinfo, '$.account')",
         PhoneNumber = "JSON_VALUE(charinfo, '$.phone')",
         FingerId = "JSON_VALUE(metadata, '$.fingerprint')",
@@ -344,6 +344,7 @@ RegisterCommand('convertjobs', function(source)
         if not success then lib.print.error(err) end
     end
 
+    lib.print.info('Converted jobs and gangs successfully')
     TriggerEvent('qbx_core:server:jobsconverted')
 end, true)
 

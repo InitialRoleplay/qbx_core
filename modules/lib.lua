@@ -114,6 +114,17 @@ function qbx.math.round(num, decimalPlaces)
     return math.floor((num * power) + 0.5) / power
 end
 
+---Returns the number of items in a table. Useful for non-array tables.
+---@param tbl table
+---@return integer
+function qbx.table.size(tbl)
+    local size = 0
+    for _ in pairs(tbl) do
+        size += 1
+    end
+    return size
+end
+
 ---Maps and returns the values of the given table by the given subfield.
 ---@param tble table
 ---@param subfield any
@@ -216,6 +227,7 @@ if isServer then
     ]]
     ---@param params LibSpawnVehicleParams
     ---@return integer netId
+    ---@return number veh
     function qbx.spawnVehicle(params)
         local model = params.model
         local source = params.spawnSource
@@ -245,18 +257,21 @@ if isServer then
         while not DoesEntityExist(veh) do Wait(0) end
         while GetVehicleNumberPlateText(veh) == '' do Wait(0) end
 
+        local state = Entity(veh).state
+        state:set('initVehicle', true, true)
+        state:set('setVehicleProperties', props, true)
+
+        lib.waitFor(function()
+            if state.setVehicleProperties then return false end
+            return true
+        end, 'Failed to set vehicle properties', 5000)
+
         if ped then
             SetPedIntoVehicle(ped, veh, -1)
         end
-
-        local owner = lib.waitFor(function()
-            local owner = NetworkGetEntityOwner(veh)
-            if owner ~= -1 then return owner end
-        end, 5000)
-
         local netId = NetworkGetNetworkIdFromEntity(veh)
-        lib.callback.await('qbx_core:client:vehicleSpawned', owner, netId, props)
-        return netId
+
+        return netId, veh
     end
 else
     ---@class LibDrawTextParams
@@ -283,7 +298,7 @@ else
 
         SetTextScale(scale, scale)
         SetTextFont(font)
-        SetTextColour(color.r, color.g, color.b, color.a)
+        SetTextColour(math.floor(color.r), math.floor(color.g), math.floor(color.b), math.floor(color.a))
         SetTextDropShadow()
         SetTextOutline()
         SetTextCentre(true)
@@ -307,7 +322,7 @@ else
 
         SetTextScale(scale, scale)
         SetTextFont(font)
-        SetTextColour(color.r, color.g, color.b, color.a)
+        SetTextColour(math.floor(color.r), math.floor(color.g), math.floor(color.b), math.floor(color.a))
         SetTextCentre(true)
         BeginTextCommandDisplayText('STRING')
         AddTextComponentSubstringPlayerName(text)

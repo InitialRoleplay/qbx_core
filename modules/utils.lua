@@ -63,7 +63,7 @@ end
 ---@return number? count
 function string.firstToUpper(str) -- luacheck: ignore
     if not str or str == '' then return end
-    return str:gsub("^%l", string.upper)
+    return str:gsub('^%l', string.upper)
 end
 
 ---@deprecated use qbx.math.round from modules/lib.lua
@@ -164,7 +164,7 @@ if isServer then
     ---@param setKickReason? fun(reason: string)
     ---@param deferrals? Deferrals
     function KickWithReason(source, reason, setKickReason, deferrals) -- luacheck: ignore
-        reason = '\n' .. reason .. '\n🔸 Check our Discord for further information: ' .. discordLink
+        reason = ('\n %s \n 🔸 Check our Discord for further information: %s'):format(reason, discordLink)
         if setKickReason then
             setKickReason(reason)
         end
@@ -517,7 +517,7 @@ else
             end
         end
         if not bone then
-            bone = {id = GetEntityBoneIndexByName(entity, "bodyshell"), type = "remains", name = "bodyshell"}
+            bone = {id = GetEntityBoneIndexByName(entity, 'bodyshell'), type = 'remains', name = 'bodyshell'}
             coords = GetWorldPositionOfEntityBone(entity, bone.id)
             distance = #(coords - playerCoords)
         end

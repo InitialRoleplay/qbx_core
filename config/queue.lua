@@ -26,12 +26,8 @@ return {
     ---If a player doesn't pass any predicate and a sub-queue with no predicate does not exist they will not be let into the server unless a player slot is available.
     ---@type SubQueueConfig[]
     subQueues = {
-        {
-            name = 'File d\'attente normale',
-            predicate = function(source)
-                return exports.initial_bot:isRolePresent(source, "931052536285233184")
-            end,
-        },
+        { name = 'Admin Queue', predicate = function(source) return IsPlayerAceAllowed(source --[[@as string]], 'admin') end, cardOptions = { color = 'good' } },
+        { name = 'Regular Queue' },
     },
 
     ---Cosmetic emojis shown along with the elapsed queue time.

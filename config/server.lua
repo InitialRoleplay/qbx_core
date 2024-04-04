@@ -17,7 +17,7 @@ return {
 
         ---@enum BloodType
         bloodTypes = {
-            "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-",
+            'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-',
         },
 
         ---@alias UniqueIdType 'citizenid' | 'AccountNumber' | 'PhoneNumber' | 'FingerId' | 'WalletId' | 'SerialNumber'
@@ -82,7 +82,8 @@ return {
         whitelistPermission = 'admin', -- Permission that's able to enter the server when the whitelist is on
         discord = 'https://discord.gg/initialrp', -- Discord invite link
         checkDuplicateLicense = true, -- Check for duplicate rockstar license on join
-        permissions = { 'owner', 'developper', 'staff', 'helper' }, -- Add as many groups as you want here after creating them in your server.cfg
+        ---@deprecated use cfg ACE system instead
+        permissions = { 'god', 'admin', 'mod' }, -- Add as many groups as you want here after creating them in your server.cfg
     },
 
     characters = {

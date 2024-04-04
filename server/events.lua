@@ -46,7 +46,7 @@ AddEventHandler('playerDropped', function(reason)
         webhook = loggingConfig.webhook['joinleave'],
         event = 'Dropped',
         color = 'red',
-        message = '**' .. GetPlayerName(src) .. '** (' .. player.PlayerData.license .. ') left..' ..'\n **Reason:** ' .. reason,
+        message = ('**%s** (%s) left...\n **Reason:** %s'):format(GetPlayerName(src), player.PlayerData.license, reason),
     })
     player.Functions.Save()
     QBX.Player_Buckets[player.PlayerData.license] = nil
@@ -164,26 +164,26 @@ end)
 ---@param reason string
 RegisterNetEvent('QBCore:Server:CloseServer', function(reason)
     local src = source --[[@as Source]]
-    if HasPermission(src, 'admin') then
+    if IsPlayerAceAllowed(src --[[@as string]], 'admin') then
         reason = reason or 'No reason specified'
         serverConfig.closed = true
         serverConfig.closedReason = reason
         for k in pairs(QBX.Players) do
-            if not HasPermission(k, serverConfig.whitelistPermission) then
-                DropPlayer(k, reason)
+            if not IsPlayerAceAllowed(k --[[@as string]], serverConfig.whitelistPermission) then
+                DropPlayer(k --[[@as string]], reason)
             end
         end
     else
-        DropPlayer(src, locale("error.no_permission"))
+        DropPlayer(src --[[@as string]], locale('error.no_permission'))
     end
 end)
 
 RegisterNetEvent('QBCore:Server:OpenServer', function()
     local src = source --[[@as Source]]
-    if HasPermission(src, 'admin') then
+    if IsPlayerAceAllowed(src --[[@as string]], 'admin') then
         serverConfig.closed = false
     else
-        DropPlayer(src, locale("error.no_permission"))
+        DropPlayer(src --[[@as string]], locale('error.no_permission'))
     end
 end)
 
