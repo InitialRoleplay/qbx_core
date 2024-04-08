@@ -263,7 +263,7 @@ lib.addCommand('changejob', {
         { name = locale('command.changejob.params.id.name'), help = locale('command.changejob.params.id.help'), type = 'playerId' },
         { name = locale('command.changejob.params.job.name'), help = locale('command.changejob.params.job.help'), type = 'string' },
     },
-    restricted = 'group.admin'
+    restricted = 'group.staff'
 }, function(source, args)
     local player = GetPlayer(tonumber(args[locale('command.changejob.params.id.name')]) --[[@as number]])
     if not player then
@@ -281,7 +281,7 @@ lib.addCommand('addjob', {
         { name = locale('command.addjob.params.job.name'), help = locale('command.addjob.params.job.help'), type = 'string' },
         { name = locale('command.addjob.params.grade.name'), help = locale('command.addjob.params.grade.help'), type = 'number', optional = true}
     },
-    restricted = 'group.admin'
+    restricted = 'group.staff'
 }, function(source, args)
     local player = GetPlayer(tonumber(args[locale('command.addjob.params.id.name')]) --[[@as number]])
     if not player then
@@ -301,7 +301,7 @@ lib.addCommand('removejob', {
         { name = locale('command.removejob.params.id.name'), help = locale('command.removejob.params.id.help'), type = 'playerId' },
         { name = locale('command.removejob.params.job.name'), help = locale('command.removejob.params.job.help'), type = 'string' }
     },
-    restricted = 'group.admin'
+    restricted = 'group.staff'
 }, function(source, args)
     local player = GetPlayer(tonumber(args[locale('command.removejob.params.id.name')]) --[[@as number]])
     if not player then

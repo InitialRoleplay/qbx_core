@@ -257,12 +257,18 @@ if isServer then
         while not DoesEntityExist(veh) do Wait(0) end
         while GetVehicleNumberPlateText(veh) == '' do Wait(0) end
 
+        local state = Entity(veh).state
+        state:set('initVehicle', true, true)
+        state:set('setVehicleProperties', props, true)
+
+        lib.waitFor(function()
+            if state.setVehicleProperties then return false end
+            return true
+        end, 'Failed to set vehicle properties', 5000)
+
         if ped then
             SetPedIntoVehicle(ped, veh, -1)
         end
-
-        Entity(veh).state:set('initVehicle', true, true)
-        Entity(veh).state:set('setVehicleProperties', props, true)
         local netId = NetworkGetNetworkIdFromEntity(veh)
 
         return netId, veh
@@ -292,7 +298,7 @@ else
 
         SetTextScale(scale, scale)
         SetTextFont(font)
-        SetTextColour(color.r, color.g, color.b, color.a)
+        SetTextColour(math.floor(color.r), math.floor(color.g), math.floor(color.b), math.floor(color.a))
         SetTextDropShadow()
         SetTextOutline()
         SetTextCentre(true)
@@ -316,7 +322,7 @@ else
 
         SetTextScale(scale, scale)
         SetTextFont(font)
-        SetTextColour(color.r, color.g, color.b, color.a)
+        SetTextColour(math.floor(color.r), math.floor(color.g), math.floor(color.b), math.floor(color.a))
         SetTextCentre(true)
         BeginTextCommandDisplayText('STRING')
         AddTextComponentSubstringPlayerName(text)

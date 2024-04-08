@@ -2,7 +2,7 @@ return {
     statusIntervalSeconds = 5, -- how often to check hunger/thirst status to remove health if 0.
     loadingModelsTimeout = 10000, -- Waiting time for ox_lib to load the models before throws an error, for low specs pc
 
-    pauseMapText = 'Initial Roleplay | SEMI-WL', -- Text shown above the map when ESC is pressed. If left empty 'FiveM' will appear
+    pauseMapText = 'Initial Roleplay | WL', -- Text shown above the map when ESC is pressed. If left empty 'FiveM' will appear
 
     characters = {
         useExternalCharacters = true, -- Whether you have an external character management resource. (If true, disables the character management inside the core)
@@ -54,7 +54,7 @@ return {
 
         smallIcon = {
             icon = 'logo', -- Here you will have to put the image name for the 'small' icon.
-            text = 'Initial Roleplay | SEMI-WL', -- Here you can add hover text for the 'small' icon.
+            text = 'Initial Roleplay | WL', -- Here you can add hover text for the 'small' icon.
         },
 
         firstButton = {
@@ -70,6 +70,6 @@ return {
 
     --- Only used by QB bridge
     hasKeys = function()
-        return exports['qb-vehiclekeys']:HasKeys()
+        return false
     end,
 }

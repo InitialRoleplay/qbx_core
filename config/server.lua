@@ -105,7 +105,7 @@ return {
     },
 
     giveVehicleKeys = function(src, plate)
-        return exports['qb-vehiclekeys']:GiveKeys(src, plate)
+        return exports.mm_carkeys:GiveTempKeys(src, plate)
     end,
 
     getSocietyAccount = function(accountName)

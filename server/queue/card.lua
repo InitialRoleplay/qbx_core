@@ -160,7 +160,8 @@ function Card:Build(players, queueNumber, totalInQueue)
     local departure = os.time()
     local arrival = departure + 6 * 60 * 60
 
-    local flight = ("%s%s%s"):format(string.char(math.random(65, 65 + 25)), string.char(math.random(65, 65 + 25)), math.random(100, 900))
+    local flight = ("%s%s%s"):format(string.char(math.random(65, 65 + 25)), string.char(math.random(65, 65 + 25)),
+        math.random(100, 900))
 
     table.insert(body, {
         ["type"] = "ColumnSet",
