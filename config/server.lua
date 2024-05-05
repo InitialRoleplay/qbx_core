@@ -56,10 +56,9 @@ return {
         }
     },
 
-
     ---@alias TableName string
     ---@alias ColumnName string
-    ---@type table<TableName, ColumnName>
+    ---@type [TableName, ColumnName][]
     characterDataTables = {
         players = 'citizenid',
         bank_accounts_new = 'id',

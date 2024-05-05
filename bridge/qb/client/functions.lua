@@ -3,7 +3,7 @@ local functions = {}
 
 -- Player
 
----@deprecated import PlayerData using module 'qbx_core:playerdata' https://qbox-docs.vercel.app/resources/core/import
+---@deprecated import PlayerData using module 'qbx_core:playerdata' https://docs.qbox.re/resources/qbx_core/modules/playerdata
 ---@param cb? fun(playerData: PlayerData)
 ---@return PlayerData? playerData
 function functions.GetPlayerData(cb)
@@ -65,9 +65,7 @@ functions.RequestAnimDict = lib.requestAnimDict
 functions.PlayAnim = function(animDict, animName, upperbodyOnly, duration)
     local flags = upperbodyOnly and 16 or 0
     local runTime = duration or -1
-    lib.requestAnimDict(animDict)
-    TaskPlayAnim(cache.ped, animDict, animName, 8.0, 3.0, runTime, flags, 0.0, false, false, true)
-    RemoveAnimDict(animDict)
+    lib.playAnim(cache.ped, animDict, animName, 8.0, 3.0, runTime, flags, 0.0, false, false, true)
 end
 
 ---@deprecated use lib.requestModel from ox_lib
