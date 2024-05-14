@@ -249,7 +249,7 @@ local function removePlayerFromGang(citizenid, gangName)
         local gang = GetGang('none')
         assert(gang ~= nil, 'cannot find none gang. Does it exist in shared/gangs.lua?')
         player.PlayerData.gang = {
-            name = gangName,
+            name = 'none',
             label = gang.label,
             isboss = false,
             grade = {
@@ -536,7 +536,8 @@ function CreatePlayer(playerData, Offline)
     function self.Functions.SetMetaData(meta, val)
         if not meta or type(meta) ~= 'string' then return end
         if (meta == 'hunger' or meta == 'thirst' or meta == 'stress') and self.PlayerData.source then
-            Player(self.PlayerData.source).state:set(meta, lib.math.clamp(val, 0, 100), true)
+            val = lib.math.clamp(val, 0, 100)
+            Player(self.PlayerData.source).state:set(meta, val, true)
         end
 
         local oldVal = self.PlayerData.metadata[meta]
