@@ -11,7 +11,7 @@ lib.addCommand('tp', {
         { name = locale('command.tp.params.y.name'), help = locale('command.tp.params.y.help'), optional = true },
         { name = locale('command.tp.params.z.name'), help = locale('command.tp.params.z.help'), optional = true }
     },
-    restricted = "group.staff"
+    restricted = "group.helper"
 }, function(source, args)
     if args[locale('command.tp.params.x.name')] and not args[locale('command.tp.params.y.name')] and not args[locale('command.tp.params.z.name')] then
         local target = GetPlayerPed(tonumber(args[locale('command.tp.params.x.name')]) --[[@as number]])
@@ -39,14 +39,14 @@ end)
 
 lib.addCommand('tpm', {
     help = locale("command.tpm.help"),
-    restricted = "group.staff"
+    restricted = "group.helper"
 }, function(source)
     TriggerClientEvent('QBCore:Command:GoToMarker', source)
 end)
 
 lib.addCommand('togglepvp', {
     help = locale("command.togglepvp.help"),
-    restricted = "group.staff"
+    restricted = "group.dev"
 }, function()
     config.server.pvp = not config.server.pvp
     GlobalState.PVPEnabled = config.server.pvp
@@ -60,7 +60,7 @@ lib.addCommand('addpermission', {
         { name = locale('command.addpermission.params.id.name'), help = locale('command.addpermission.params.id.help'), type = 'playerId' },
         { name = locale('command.addpermission.params.permission.name'), help = locale('command.addpermission.params.permission.help'), type = 'string' }
     },
-    restricted = "group.staff"
+    restricted = "group.dev"
 }, function(source, args)
     local player = GetPlayer(args[locale('command.addpermission.params.id.name')])
     local permission = args[locale('command.addpermission.params.permission.name')]
@@ -78,7 +78,7 @@ lib.addCommand('removepermission', {
         { name = locale('command.removepermission.params.id.name'), help = locale('command.removepermission.params.id.help'), type = 'playerId' },
         { name = locale('command.removepermission.params.permission.name'), help = locale('command.removepermission.params.permission.help'), type = 'string' }
     },
-    restricted = "group.staff"
+    restricted = "group.dev"
 }, function(source, args)
     local player = GetPlayer(args[locale('command.removepermission.params.id.name')])
     local permission = args[locale('command.removepermission.params.permission.name')]
@@ -94,7 +94,7 @@ end)
 
 lib.addCommand('openserver', {
     help = locale("command.openserver.help"),
-    restricted = "group.staff"
+    restricted = "group.owner"
 }, function(source)
     if not config.server.closed then
         Notify(source, locale('error.server_already_open'), 'error')
@@ -114,7 +114,7 @@ lib.addCommand('closeserver', {
     params = {
         { name = locale('command.closeserver.params.reason.name'), help = locale('command.closeserver.params.reason.help'), type = 'string' }
     },
-    restricted = "group.staff"
+    restricted = "group.owner"
 }, function(source, args)
     if config.server.closed then
         Notify(source, locale('error.server_already_closed'), 'error')
@@ -145,7 +145,7 @@ lib.addCommand('car', {
         { name = locale('command.car.params.model.name'), help = locale('command.car.params.model.help') },
         { name = locale('command.car.params.keepCurrentVehicle.name'), help = locale('command.car.params.keepCurrentVehicle.help'), optional = true },
     },
-    restricted = "group.staff"
+    restricted = "group.mod"
 }, function(source, args)
     if not args then return end
 
@@ -171,7 +171,7 @@ lib.addCommand('dv', {
     params = {
         { name = locale('command.dv.params.radius.name'), help = locale('command.dv.params.radius.help'), type = 'number', optional = true }
     },
-    restricted = 'group.staff'
+    restricted = 'group.helper'
 }, function(source, args)
     local ped = GetPlayerPed(source)
     local pedCars = {GetVehiclePedIsIn(ped, false)}
@@ -202,7 +202,7 @@ lib.addCommand('givemoney', {
         { name = locale('command.givemoney.params.moneytype.name'), help = locale('command.givemoney.params.moneytype.help'), type = 'string' },
         { name = locale('command.givemoney.params.amount.name'), help = locale('command.givemoney.params.amount.help'), type = 'number' }
     },
-    restricted = "group.staff"
+    restricted = "group.superadmin"
 }, function(source, args)
     local player = GetPlayer(args[locale('command.givemoney.params.id.name')])
     if not player then
@@ -220,7 +220,7 @@ lib.addCommand('setmoney', {
         { name = locale('command.setmoney.params.moneytype.name'), help = locale('command.setmoney.params.moneytype.help'), type = 'string' },
         { name = locale('command.setmoney.params.amount.name'), help = locale('command.setmoney.params.amount.help'), type = 'number' }
     },
-    restricted = "group.staff"
+    restricted = "group.superadmin"
 }, function(source, args)
     local player = GetPlayer(args[locale('command.setmoney.params.id.name')])
     if not player then
@@ -246,7 +246,7 @@ lib.addCommand('setjob', {
         { name = locale('command.setjob.params.job.name'), help = locale('command.setjob.params.job.help'), type = 'string' },
         { name = locale('command.setjob.params.grade.name'), help = locale('command.setjob.params.grade.help'), type = 'number', optional = true }
     },
-    restricted = "group.staff"
+    restricted = "group.admin"
 }, function(source, args)
     local player = GetPlayer(args[locale('command.setjob.params.id.name')])
     if not player then
@@ -265,7 +265,7 @@ lib.addCommand('changejob', {
         { name = locale('command.changejob.params.id.name'), help = locale('command.changejob.params.id.help'), type = 'playerId' },
         { name = locale('command.changejob.params.job.name'), help = locale('command.changejob.params.job.help'), type = 'string' },
     },
-    restricted = 'group.staff'
+    restricted = 'group.admin'
 }, function(source, args)
     local player = GetPlayer(args[locale('command.changejob.params.id.name')])
     if not player then
@@ -283,7 +283,7 @@ lib.addCommand('addjob', {
         { name = locale('command.addjob.params.job.name'), help = locale('command.addjob.params.job.help'), type = 'string' },
         { name = locale('command.addjob.params.grade.name'), help = locale('command.addjob.params.grade.help'), type = 'number', optional = true}
     },
-    restricted = 'group.staff'
+    restricted = 'group.admin'
 }, function(source, args)
     local player = GetPlayer(args[locale('command.addjob.params.id.name')])
     if not player then
@@ -300,7 +300,7 @@ lib.addCommand('removejob', {
         { name = locale('command.removejob.params.id.name'), help = locale('command.removejob.params.id.help'), type = 'playerId' },
         { name = locale('command.removejob.params.job.name'), help = locale('command.removejob.params.job.help'), type = 'string' }
     },
-    restricted = 'group.staff'
+    restricted = 'group.admin'
 }, function(source, args)
     local player = GetPlayer(args[locale('command.removejob.params.id.name')])
     if not player then
@@ -309,96 +309,6 @@ lib.addCommand('removejob', {
     end
 
     RemovePlayerFromJob(player.PlayerData.citizenid, args[locale('command.removejob.params.job.name')])
-end)
-
--- Gang
-
-lib.addCommand('gang', {
-    help = locale('command.gang.help')
-}, function(source)
-    local PlayerGang = GetPlayer(source).PlayerData.gang
-    Notify(source, locale('info.gang_info', PlayerGang?.label, PlayerGang?.grade.name))
-end)
-
-lib.addCommand('setgang', {
-    help = locale('command.setgang.help'),
-    params = {
-        { name = locale('command.setgang.params.id.name'), help = locale('command.setgang.params.id.help'), type = 'playerId' },
-        { name = locale('command.setgang.params.gang.name'), help = locale('command.setgang.params.gang.help'), type = 'string' },
-        { name = locale('command.setgang.params.grade.name'), help = locale('command.setgang.params.grade.help'), type = 'number', optional = true }
-    },
-    restricted = "group.staff"
-}, function(source, args)
-    local player = GetPlayer(args[locale('command.setgang.params.id.name')])
-    if not player then
-        Notify(source, locale('error.not_online'), 'error')
-        return
-    end
-
-    player.Functions.SetGang(args[locale('command.setgang.params.gang.name')], args[locale('command.setgang.params.grade.name')] or 0)
-end)
-
--- Out of Character Chat
-
-lib.addCommand('ooc', {
-    help = locale('command.ooc.help')
-}, function(source, args)
-    local message = table.concat(args, ' ')
-    local players = GetPlayers()
-    local player = GetPlayer(source)
-    if not player then return end
-
-    local playerCoords = GetEntityCoords(GetPlayerPed(source))
-    for _, v in pairs(players) do
-        if v == source then
-            TriggerClientEvent('chat:addMessage', v --[[@as Source]], {
-                color = { 0, 0, 255},
-                multiline = true,
-                args = {('OOC | %s'):format(GetPlayerName(source)), message}
-            })
-        elseif #(playerCoords - GetEntityCoords(GetPlayerPed(v))) < 20.0 then
-            TriggerClientEvent('chat:addMessage', v --[[@as Source]], {
-                color = { 0, 0, 255},
-                multiline = true,
-                args = {('OOC | %s'):format(GetPlayerName(source)), message}
-            })
-        elseif IsPlayerAceAllowed(v --[[@as string]], 'admin') then
-            if IsOptin(v --[[@as Source]]) then
-                TriggerClientEvent('chat:addMessage', v --[[@as Source]], {
-                    color = { 0, 0, 255},
-                    multiline = true,
-                    args = {('Proximity OOC | %s'):format(GetPlayerName(source)), message}
-                })
-                logger.log({
-                    source = 'qbx_core',
-                    webhook  = 'ooc',
-                    event = 'OOC',
-                    color = 'white',
-                    tags = config.logging.role,
-                    message = ('**%s** (CitizenID: %s | ID: %s) **Message:** %s'):format(GetPlayerName(source), player.PlayerData.citizenid, source, message)
-                })
-            end
-        end
-    end
-end)
-
--- Me command
-
-lib.addCommand('me', {
-    help = locale('command.me.help'),
-    params = {
-        { name = locale('command.me.params.message.name'), help = locale('command.me.params.message.help'), type = 'string' }
-    }
-}, function(source, args)
-    args[1] = args[locale('command.me.params.message.name')]
-    args[locale('command.me.params.message.name')] = nil
-    if #args < 1 then Notify(source, locale('error.missing_args2'), 'error') return end
-    local msg = table.concat(args, ' '):gsub('[~<].-[>~]', '')
-    local playerState = Player(source).state
-    playerState:set('me', msg, true)
-
-    -- We have to reset the playerState since the state does not get replicated on StateBagHandler if the value is the same as the previous one --
-    playerState:set('me', nil, true)
 end)
 
 -- ID command
@@ -411,12 +321,12 @@ end)
 
 lib.addCommand('logout', {
     help = locale('info.logout_command_help'),
-    restricted = 'group.staff',
+    restricted = 'group.dev',
 }, Logout)
 
 lib.addCommand('deletechar', {
     help = locale('info.deletechar_command_help'),
-    restricted = 'group.staff',
+    restricted = 'group.dev',
     params = {
         { name = 'id', help = locale('info.deletechar_command_arg_player_id'), type = 'number' },
     }
