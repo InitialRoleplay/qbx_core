@@ -2,7 +2,7 @@ return {
     statusIntervalSeconds = 5, -- how often to check hunger/thirst status to remove health if 0.
     loadingModelsTimeout = 10000, -- Waiting time for ox_lib to load the models before throws an error, for low specs pc
 
-    pauseMapText = 'Initial Roleplay | WL', -- Text shown above the map when ESC is pressed. If left empty 'FiveM' will appear
+    pauseMapText = 'Initial Roleplay | Free Access', -- Text shown above the map when ESC is pressed. If left empty 'FiveM' will appear
 
     characters = {
         useExternalCharacters = true, -- Whether you have an external character management resource. (If true, disables the character management inside the core)
@@ -245,7 +245,7 @@ return {
     discord = {
         enabled = true, -- This will enable or disable the built in discord rich presence.
 
-        appId = '1133139616397000704', -- This is the Application ID (Replace this with you own)
+        appId = '1196356216536956958', -- This is the Application ID (Replace this with you own)
 
         largeIcon = { -- To set this up, visit https://forum.cfx.re/t/how-to-updated-discord-rich-presence-custom-image/157686
             icon = 'logo', -- Here you will have to put the image name for the 'large' icon.
@@ -254,18 +254,18 @@ return {
 
         smallIcon = {
             icon = 'logo', -- Here you will have to put the image name for the 'small' icon.
-            text = 'Initial Roleplay | WL', -- Here you can add hover text for the 'small' icon.
+            text = 'Initial Roleplay | FA', -- Here you can add hover text for the 'small' icon.
         },
 
         firstButton = {
             text = 'Notre discord',
-            link = 'https://discord.gg/BB4b6E3STf',
+            link = 'https://discord.gg/initialrp',
         },
 
-        secondButton = {
-            text = 'Notre siteweb',
-            link = 'https://initialrp.fr',
-        }
+        -- secondButton = {
+        --     text = 'Notre siteweb',
+        --     link = 'https://initialrp.fr',
+        -- }
     },
 
     --- Only used by QB bridge
