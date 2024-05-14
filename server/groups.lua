@@ -14,7 +14,7 @@
 ---@field bankAuth? boolean
 
 ---@class JobGradeData : GradeData
----@field payment number
+---@field payment? number
 
 ---@class GangGradeData : GradeData
 
