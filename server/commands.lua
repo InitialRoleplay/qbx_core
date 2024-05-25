@@ -145,7 +145,7 @@ lib.addCommand('car', {
         { name = locale('command.car.params.model.name'), help = locale('command.car.params.model.help') },
         { name = locale('command.car.params.keepCurrentVehicle.name'), help = locale('command.car.params.keepCurrentVehicle.help'), optional = true },
     },
-    restricted = "group.mod"
+    restricted = "group.helper"
 }, function(source, args)
     if not args then return end
 

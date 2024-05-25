@@ -286,14 +286,14 @@ function Card:Build(players, queueNumber, totalInQueue)
                 ["items"] = {
                     {
                         ["type"] = "TextBlock",
-                        ["text"] = "Los Angeles International Airport",
+                        ["text"] = "Los Santos International Airport",
                         ["wrap"] = true,
                         ["isSubtle"] = true,
                         ["horizontalAlignment"] = "Right",
                     },
                     {
                         ["type"] = "TextBlock",
-                        ["text"] = "LAX",
+                        ["text"] = "LSIA",
                         ["wrap"] = true,
                         ["size"] = "ExtraLarge",
                         ["color"] = "Accent",
@@ -312,7 +312,7 @@ function Card:Build(players, queueNumber, totalInQueue)
             {
                 ["title"] = "Discord",
                 ["type"] = "Action.OpenUrl",
-                ["url"] = "https://discord.gg/BB4b6E3STf"
+                ["url"] = "https://discord.gg/initialrp"
             }
         }
     })

@@ -3,7 +3,7 @@ local QueueSystem = require 'server.queue.api.queue'
 local API = {}
 local discordGuildId = GetConvar('qbx:discordGuildId', "")
 local discordBotToken = GetConvar('qbx:discordBotToken', '')
-local discordAPIVersion = GetConvarInt('qbx:discordAPIVersion', 10)
+local discordAPIVersion = 10
 
 function API:FetchMemberInfo(discordId, callback)
     local function responseCallback(respCode, resultData, result, error)

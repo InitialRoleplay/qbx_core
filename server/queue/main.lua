@@ -4,18 +4,17 @@ local Card = require 'server.queue.card'
 local Webhook = require 'server.queue.webhook'
 
 local maxPlayersConvar = GetConvarInt('sv_maxclients', 48)
-local displayQueueInHostname = GetConvarInt('qbx:displayQueueInHostname', 1) == 1
-local gracePeriod = GetConvarInt('qbx:gracePeriod', 0)
-local ghostCheckInterval = GetConvarInt('qbx:ghostCheckInterval', 30)
-local hostname = GetConvar('sv_hostname', 'Project Sloth')
-local webhookStatusMessage = GetConvar('qbx:webhookStatusMessage', '')
-local webhookStatusUpdateInterval = GetConvarInt('qbx:webhookStatusUpdateInterval', 30)
+local gracePeriod = 0
+local ghostCheckInterval = 30
+local hostname = GetConvar('sv_hostname', 'Initial Roleplay | Free Access')
+local webhookStatusMessage = ''
+local webhookStatusUpdateInterval = 30
 
 local Queue = {}
 local inQueue = {}
 local recentlyLeft = {}
 local shouldQueueRun = false
-local webhookStatusMessageId = GetResourceKvpString('psdiscord:webhookStatusMessageId') or ''
+local webhookStatusMessageId = GetResourceKvpString('qbx:webhookStatusMessageId') or ''
 
 local function sortQueue()
     local usersWithPriority = {}
@@ -57,11 +56,6 @@ end
 local function updateQueueNumbers()
     for i, data in ipairs(inQueue) do
         setAdaptiveCard(data.deferrals, tostring(GetPlayerName(data.source)), i, #inQueue)
-    end
-
-    if displayQueueInHostname and #inQueue > 0 then
-        local withQueue = string.format('[%s] %s', #inQueue, hostname)
-        SetConvar('sv_hostname', withQueue)
     end
 end
 
@@ -185,6 +179,7 @@ function Queue:AddToQueue(source, identifier, deferrals)
         end
 
         local priority = 1000
+
         for _, role in ipairs(roles) do
             if not hasRole then
                 for _, allowedRole in ipairs(Roles.allowlistedRoles) do

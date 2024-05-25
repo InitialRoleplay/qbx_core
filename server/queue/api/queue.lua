@@ -3,7 +3,7 @@ local QueueSystem = {}
 local queue = {}
 local recentRequests = {}
 local shouldRunQueueChecks = false
-local requestsPerMinuteConvar = GetConvarInt('qbx:discordRequestsPerMinute', 30)
+local requestsPerMinuteConvar = 30
 
 local function doRequest(request, callback)
     local function responseCallback(respCode, resultData, result, error)
