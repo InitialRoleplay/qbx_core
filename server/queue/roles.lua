@@ -1,6 +1,6 @@
 -- Role(s) that are allowed to go through the queue, you may leave it empty if you want everyone in your server to be able to join
 local allowlistedRoles = {
-    "942947316514566186",
+    "1247195082839294092",
 }
 
 -- Put in what priority their Discord role should have, the higher they are on the list the higher priority they have.
@@ -13,6 +13,7 @@ local priorityRoles = {
     "1205132704807518218",
     "1196203150479200388",
     "1196203233815822478",
+    "1247195082839294092",
 }
 
 return {

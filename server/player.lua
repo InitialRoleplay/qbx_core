@@ -486,15 +486,18 @@ function CheckPlayerData(source, playerData)
         date = nil
     }
     playerData.metadata.licences = playerData.metadata.licences or {
-        driver_license_bike = true,
-        driver_license_car = true,
-        driver_license_truck = true,
-        driver_license_boat = true,
-        driver_license_helicopter = true,
-        driver_license_plane = true,
-        weapon_license_small = true,
-        weapon_license_medium = true,
-        weapon_license_big = true,
+        theory_license_bike = false,
+        theory_license_car = false,
+        theory_license_truck = false,
+        driver_license_bike = false,
+        driver_license_car = false,
+        driver_license_truck = false,
+        driver_license_boat = false,
+        driver_license_helicopter = false,
+        driver_license_plane = false,
+        weapon_license_small = false,
+        weapon_license_medium = false,
+        weapon_license_big = false,
     }
     playerData.metadata.inside = playerData.metadata.inside or {
         house = nil,

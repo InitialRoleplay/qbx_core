@@ -79,7 +79,7 @@ end
 
 local function generateStatusMessage()
     return {
-        username = 'Initial Roleplay',
+        username = 'Initial Roleplay | Free Access',
         avatar_url = 'https://avatars.githubusercontent.com/u/99291234?s=200&v=4',
         embeds = {
             {
@@ -115,7 +115,7 @@ local function checkForEmbedPost()
             local data = json.decode(response)
 
             if data then
-                SetResourceKvp('psdiscord:webhookStatusMessageId', data.id)
+                SetResourceKvp('qbx:webhookStatusMessageId', data.id)
                 webhookStatusMessageId = data.id
             end
 
@@ -306,7 +306,7 @@ end
 
 RegisterCommand("clearWebhookStatus", function(source)
     webhookStatusMessageId = ''
-    SetResourceKvp('psdiscord:webhookStatusMessageId', '')
+    SetResourceKvp('qbx:webhookStatusMessageId', '')
 end, true)
 
 return Queue
