@@ -6,7 +6,7 @@ local requestsMade = {}
 local shouldRunQueueChecks = false
 
 local function processQueue()
-    for webhook, requests in pairs(requestsMade) do
+    for _, requests in pairs(requestsMade) do
         for i = #requests, 1, -1 do
             if os.time() - requests[i] > 60 then
                 table.remove(requests, i)

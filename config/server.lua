@@ -30,7 +30,7 @@ return {
             },
             AccountNumber = {
                 valueFunction = function()
-                    return 'US0' .. math.random(1, 9) .. 'QBX' .. math.random(1111, 9999) .. math.random(1111, 9999) .. math.random(11, 99)
+                    return 'US0' .. math.random(1111, 9999) .. math.random(1111, 9999) .. math.random(11, 99)
                 end,
             },
             PhoneNumber = {
@@ -45,7 +45,7 @@ return {
             },
             WalletId = {
                 valueFunction = function()
-                    return 'QB-' .. math.random(11111111, 99999999)
+                    return 'US-' .. math.random(11111111, 99999999)
                 end,
             },
             SerialNumber = {
@@ -77,7 +77,7 @@ return {
         whitelistPermission = 'admin', -- Permission that's able to enter the server when the whitelist is on
         discord = 'https://discord.gg/initialrp', -- Discord invite link
         checkDuplicateLicense = true, -- Check for duplicate rockstar license on join
-        permissions = { 'owner', 'developper', 'staff', 'helper' }, -- Add as many groups as you want here after creating them in your server.cfg
+        permissions = { 'owner', 'dev', 'superadmin', 'admin', 'mod', 'helper' }, -- Add as many groups as you want here after creating them in your server.cfg
     },
 
     characters = {
