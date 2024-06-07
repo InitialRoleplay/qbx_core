@@ -208,5 +208,3 @@ RegisterNetEvent('QBCore:ToggleDuty', function()
     end
     TriggerClientEvent('QBCore:Client:SetDuty', src, player.PlayerData.job.onduty)
 end)
-
-require 'server.queue'
