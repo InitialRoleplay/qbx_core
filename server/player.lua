@@ -571,6 +571,7 @@ function Logout(source)
     QBX.Players[source] = nil
     GlobalState.PlayerCount -= 1
     TriggerClientEvent('qbx_core:client:playerLoggedOut', source)
+    TriggerEvent('qbx_core:server:playerLoggedOut', source)
 end
 
 exports('Logout', Logout)
@@ -619,6 +620,7 @@ function CreatePlayer(playerData, Offline)
     ---@param jobName string name
     ---@param grade? integer defaults to 0
     ---@return boolean success if job was set
+    ---@return ErrorResult? errorResult
     function self.Functions.SetJob(jobName, grade)
         jobName = jobName:lower()
         grade = grade or 0
@@ -634,8 +636,10 @@ function CreatePlayer(playerData, Offline)
         if setJobReplaces then
             RemovePlayerFromJob(self.PlayerData.citizenid, self.PlayerData.job.name)
         end
-        AddPlayerToJob(self.PlayerData.citizenid, jobName, grade)
-        SetPlayerPrimaryJob(self.PlayerData.citizenid, jobName)
+        local success, errorResult = AddPlayerToJob(self.PlayerData.citizenid, jobName, grade)
+        if not success then return false, errorResult end
+        success, errorResult = SetPlayerPrimaryJob(self.PlayerData.citizenid, jobName)
+        if not success then return false, errorResult end
         return true
     end
 
@@ -643,6 +647,7 @@ function CreatePlayer(playerData, Offline)
     ---@param gangName string name
     ---@param grade? integer defaults to 0
     ---@return boolean success if gang was set
+    ---@return ErrorResult? errorResult
     function self.Functions.SetGang(gangName, grade)
         gangName = gangName:lower()
         grade = grade or 0
@@ -656,10 +661,13 @@ function CreatePlayer(playerData, Offline)
             return false
         end
         if setGangReplaces then
-            removePlayerFromGang(self.PlayerData.citizenid, self.PlayerData.gang.name)
+            local success, errorResult = removePlayerFromGang(self.PlayerData.citizenid, self.PlayerData.gang.name)
+            if not success then return false, errorResult end
         end
-        AddPlayerToGang(self.PlayerData.citizenid, gangName, grade)
-        setPlayerPrimaryGang(self.PlayerData.citizenid, gangName)
+        local success, errorResult = AddPlayerToGang(self.PlayerData.citizenid, gangName, grade)
+        if not success then return false, errorResult end
+        success, errorResult = setPlayerPrimaryGang(self.PlayerData.citizenid, gangName)
+        if not success then return false, errorResult end
         return true
     end
 
@@ -727,13 +735,15 @@ function CreatePlayer(playerData, Offline)
         if not self.Offline then
             self.Functions.UpdatePlayerData()
             local tags = amount > 100000 and config.logging.role or nil
+            local resource = GetInvokingResource() or cache.resource
             logger.log({
-                source = 'qbx_core',
+                source = resource,
                 webhook = config.logging.webhook['playermoney'],
                 event = 'AddMoney',
                 color = 'lightgreen',
                 tags = tags,
                 message = ('**%s (citizenid: %s | id: %s)** $%s (%s) added, new %s balance: $%s reason: %s'):format(GetPlayerName(self.PlayerData.source), self.PlayerData.citizenid, self.PlayerData.source, amount, moneytype, moneytype, self.PlayerData.money[moneytype], reason),
+                --oxLibTags = ('script:%s,playerName:%s,citizenId:%s,playerSource:%s,amount:%s,moneyType:%s,newBalance:%s,reason:%s'):format(resource, GetPlayerName(self.PlayerData.source), self.PlayerData.citizenid, self.PlayerData.source, amount, moneytype, self.PlayerData.money[moneytype], reason)
             })
             TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, moneytype, amount, false)
             TriggerClientEvent('QBCore:Client:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'add', reason)
@@ -764,13 +774,15 @@ function CreatePlayer(playerData, Offline)
         if not self.Offline then
             self.Functions.UpdatePlayerData()
             local tags = amount > 100000 and config.logging.role or nil
+            local resource = GetInvokingResource() or cache.resource
             logger.log({
-                source = 'qbx_core',
+                source = resource,
                 webhook = config.logging.webhook['playermoney'],
                 event = 'RemoveMoney',
                 color = 'red',
                 tags = tags,
                 message = ('** %s (citizenid: %s | id: %s)** $%s (%s) removed, new %s balance: $%s reason: %s'):format(GetPlayerName(self.PlayerData.source), self.PlayerData.citizenid, self.PlayerData.source, amount, moneytype, moneytype, self.PlayerData.money[moneytype], reason),
+                --oxLibTags = ('script:%s,playerName:%s,citizenId:%s,playerSource:%s,amount:%s,moneyType:%s,newBalance:%s,reason:%s'):format(resource, GetPlayerName(self.PlayerData.source), self.PlayerData.citizenid, self.PlayerData.source, amount, moneytype, self.PlayerData.money[moneytype], reason)
             })
             TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, moneytype, amount, true)
             if moneytype == 'bank' then
@@ -797,14 +809,20 @@ function CreatePlayer(playerData, Offline)
 
         if not self.Offline then
             self.Functions.UpdatePlayerData()
+            local dirChange = difference < 0 and 'added' or 'removed'
+            local absDifference = math.abs(difference)
+            local tags = absDifference > 50000 and config.logging.role or {}
+            local resource = GetInvokingResource() or cache.resource
             logger.log({
-                source = 'qbx_core',
+                source = resource,
                 webhook = config.logging.webhook['playermoney'],
                 event = 'SetMoney',
-                color = 'green',
-                message = ('**%s (citizenid: %s | id: %s)** $%s (%s) set, new %s balance: $%s reason: %s'):format(GetPlayerName(self.PlayerData.source), self.PlayerData.citizenid, self.PlayerData.source, amount, moneytype, moneytype, self.PlayerData.money[moneytype], reason),
+                color = difference < 0 and 'green' or 'red',
+                tags = tags,
+                message = ('**%s (citizenid: %s | id: %s)** $%s (%s) %s, new %s balance: $%s reason: %s'):format(GetPlayerName(self.PlayerData.source), self.PlayerData.citizenid, self.PlayerData.source, absDifference, moneytype, dirChange, moneytype, self.PlayerData.money[moneytype], reason),
+                --oxLibTags = ('script:%s,playerName:%s,citizenId:%s,playerSource:%s,amount:%s,moneyType:%s,newBalance:%s,reason:%s,direction:%s'):format(resource, GetPlayerName(self.PlayerData.source), self.PlayerData.citizenid, self.PlayerData.source, absDifference, moneytype, self.PlayerData.money[moneytype], reason, dirChange)
             })
-            TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, moneytype, math.abs(difference), difference < 0)
+            TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, moneytype, absDifference, difference < 0)
             TriggerClientEvent('QBCore:Client:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'set', reason)
             TriggerEvent('QBCore:Server:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'set', reason)
         end

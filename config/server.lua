@@ -66,6 +66,7 @@ return {
         {'playerskins', 'citizenid'},
         {'player_outfits', 'citizenid'},
         {'player_vehicles', 'citizenid'},
+        {'player_groups', 'citizenid'},
         {'players', 'citizenid'},
     }, -- Rows to be deleted when the character is deleted
 
@@ -87,9 +88,6 @@ return {
 
         defaultNumberOfCharacters = 3, -- Define maximum amount of default characters (maximum 3 characters defined by default)
     },
-
-    ---@type { name: string, amount: integer, metadata: fun(source: number): table }[]
-    starterItems = {},
 
     -- this configuration is for core events only. putting other webhooks here will have no effect
     logging = {

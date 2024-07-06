@@ -254,7 +254,8 @@ lib.addCommand('setjob', {
         return
     end
 
-    player.Functions.SetJob(args[locale('command.setjob.params.job.name')], args[locale('command.setjob.params.grade.name')] or 0)
+    local success, errorResult = player.Functions.SetJob(args[locale('command.setjob.params.job.name')], args[locale('command.setjob.params.grade.name')] or 0)
+    assert(success, errorResult)
 end)
 
 --- ADMIN COMMAND
@@ -273,7 +274,8 @@ lib.addCommand('changejob', {
         return
     end
 
-    SetPlayerPrimaryJob(player.PlayerData.citizenid, args[locale('command.changejob.params.job.name')])
+    local success, errorResult = SetPlayerPrimaryJob(player.PlayerData.citizenid, args[locale('command.changejob.params.job.name')])
+    assert(success, errorResult)
 end)
 
 lib.addCommand('addjob', {
@@ -291,7 +293,8 @@ lib.addCommand('addjob', {
         return
     end
 
-    AddPlayerToJob(player.PlayerData.citizenid, args[locale('command.addjob.params.job.name')], args[locale('command.addjob.params.grade.name')] or 0)
+    local success, errorResult = AddPlayerToJob(player.PlayerData.citizenid, args[locale('command.addjob.params.job.name')], args[locale('command.addjob.params.grade.name')] or 0)
+    assert(success, errorResult)
 end)
 
 lib.addCommand('removejob', {
@@ -308,7 +311,99 @@ lib.addCommand('removejob', {
         return
     end
 
-    RemovePlayerFromJob(player.PlayerData.citizenid, args[locale('command.removejob.params.job.name')])
+    local success, errorResult = RemovePlayerFromJob(player.PlayerData.citizenid, args[locale('command.removejob.params.job.name')])
+    assert(success, errorResult)
+end)
+
+-- Gang
+
+-- lib.addCommand('gang', {
+--     help = locale('command.gang.help')
+-- }, function(source)
+--     local PlayerGang = GetPlayer(source).PlayerData.gang
+--     Notify(source, locale('info.gang_info', PlayerGang?.label, PlayerGang?.grade.name))
+-- end)
+
+-- lib.addCommand('setgang', {
+--     help = locale('command.setgang.help'),
+--     params = {
+--         { name = locale('command.setgang.params.id.name'), help = locale('command.setgang.params.id.help'), type = 'playerId' },
+--         { name = locale('command.setgang.params.gang.name'), help = locale('command.setgang.params.gang.help'), type = 'string' },
+--         { name = locale('command.setgang.params.grade.name'), help = locale('command.setgang.params.grade.help'), type = 'number', optional = true }
+--     },
+--     restricted = 'group.admin'
+-- }, function(source, args)
+--     local player = GetPlayer(args[locale('command.setgang.params.id.name')])
+--     if not player then
+--         Notify(source, locale('error.not_online'), 'error')
+--         return
+--     end
+
+--     local success, errorResult = player.Functions.SetGang(args[locale('command.setgang.params.gang.name')], args[locale('command.setgang.params.grade.name')] or 0)
+--     assert(success, errorResult)
+-- end)
+
+-- Out of Character Chat
+
+lib.addCommand('ooc', {
+    help = locale('command.ooc.help')
+}, function(source, args)
+    local message = table.concat(args, ' ')
+    local players = GetPlayers()
+    local player = GetPlayer(source)
+    if not player then return end
+
+    local playerCoords = GetEntityCoords(GetPlayerPed(source))
+    for _, v in pairs(players) do
+        if v == source then
+            TriggerClientEvent('chat:addMessage', v --[[@as Source]], {
+                color = { 0, 0, 255},
+                multiline = true,
+                args = {('OOC | %s'):format(GetPlayerName(source)), message}
+            })
+        elseif #(playerCoords - GetEntityCoords(GetPlayerPed(v))) < 20.0 then
+            TriggerClientEvent('chat:addMessage', v --[[@as Source]], {
+                color = { 0, 0, 255},
+                multiline = true,
+                args = {('OOC | %s'):format(GetPlayerName(source)), message}
+            })
+        elseif IsPlayerAceAllowed(v --[[@as string]], 'admin') then
+            if IsOptin(v --[[@as Source]]) then
+                TriggerClientEvent('chat:addMessage', v --[[@as Source]], {
+                    color = { 0, 0, 255},
+                    multiline = true,
+                    args = {('Proximity OOC | %s'):format(GetPlayerName(source)), message}
+                })
+                logger.log({
+                    source = 'qbx_core',
+                    webhook  = 'ooc',
+                    event = 'OOC',
+                    color = 'white',
+                    tags = config.logging.role,
+                    message = ('**%s** (CitizenID: %s | ID: %s) **Message:** %s'):format(GetPlayerName(source), player.PlayerData.citizenid, source, message)
+                })
+            end
+        end
+    end
+end)
+
+-- Me command
+
+lib.addCommand('me', {
+    help = locale('command.me.help'),
+    params = {
+        { name = locale('command.me.params.message.name'), help = locale('command.me.params.message.help'), type = 'string' }
+    }
+}, function(source, args)
+    args[1] = args[locale('command.me.params.message.name')]
+    args[locale('command.me.params.message.name')] = nil
+    if #args < 1 then Notify(source, locale('error.missing_args2'), 'error') return end
+    local msg = table.concat(args, ' '):gsub('[~<].-[>~]', '')
+    local playerState = Player(source).state
+    playerState:set('me', msg, true)
+
+    -- We have to reset the playerState since the state does not get replicated on StateBagHandler if the value is the same as the previous one --
+    playerState:set('me', nil, true)
 end)
 
 -- ID command
