@@ -3,7 +3,6 @@ local logger = require 'modules.logger'
 
 GlobalState.PVPEnabled = config.server.pvp
 
--- Teleport
 lib.addCommand('tp', {
     help = locale('command.tp.help'),
     params = {
@@ -52,8 +51,6 @@ lib.addCommand('togglepvp', {
     GlobalState.PVPEnabled = config.server.pvp
 end)
 
--- Permissions
-
 lib.addCommand('addpermission', {
     help = locale('command.addpermission.help'),
     params = {
@@ -90,8 +87,6 @@ lib.addCommand('removepermission', {
     RemovePermission(player.PlayerData.source, permission)
 end)
 
--- Open & Close Server
-
 lib.addCommand('openserver', {
     help = locale("command.openserver.help"),
     restricted = "group.owner"
@@ -127,7 +122,7 @@ lib.addCommand('closeserver', {
         config.server.closedReason = reason
         for k in pairs(QBX.Players) do
             if not IsPlayerAceAllowed(k --[[@as string]], config.server.whitelistPermission) then
-                DropPlayer(k, reason)
+                DropPlayer(k --[[@as string]], reason)
             end
         end
 
@@ -136,8 +131,6 @@ lib.addCommand('closeserver', {
         DropPlayer(source, locale('error.no_permission'))
     end
 end)
-
--- Vehicle
 
 lib.addCommand('car', {
     help = locale('command.car.help'),
@@ -193,8 +186,6 @@ lib.addCommand('dv', {
     end
 end)
 
--- Money
-
 lib.addCommand('givemoney', {
     help = locale('command.givemoney.help'),
     params = {
@@ -231,7 +222,6 @@ lib.addCommand('setmoney', {
     player.Functions.SetMoney(args[locale('command.setmoney.params.moneytype.name')], args[locale('command.setmoney.params.amount.name')])
 end)
 
--- Job
 lib.addCommand('job', {
     help = locale('command.job.help')
 }, function(source)
@@ -255,10 +245,8 @@ lib.addCommand('setjob', {
     end
 
     local success, errorResult = player.Functions.SetJob(args[locale('command.setjob.params.job.name')], args[locale('command.setjob.params.grade.name')] or 0)
-    assert(success, errorResult)
+    assert(success, json.encode(errorResult))
 end)
-
---- ADMIN COMMAND
 
 lib.addCommand('changejob', {
     help = locale('command.changejob.help'),
@@ -275,7 +263,7 @@ lib.addCommand('changejob', {
     end
 
     local success, errorResult = SetPlayerPrimaryJob(player.PlayerData.citizenid, args[locale('command.changejob.params.job.name')])
-    assert(success, errorResult)
+    assert(success, json.encode(errorResult))
 end)
 
 lib.addCommand('addjob', {
@@ -294,7 +282,7 @@ lib.addCommand('addjob', {
     end
 
     local success, errorResult = AddPlayerToJob(player.PlayerData.citizenid, args[locale('command.addjob.params.job.name')], args[locale('command.addjob.params.grade.name')] or 0)
-    assert(success, errorResult)
+    assert(success, json.encode(errorResult))
 end)
 
 lib.addCommand('removejob', {
@@ -312,7 +300,7 @@ lib.addCommand('removejob', {
     end
 
     local success, errorResult = RemovePlayerFromJob(player.PlayerData.citizenid, args[locale('command.removejob.params.job.name')])
-    assert(success, errorResult)
+    assert(success, json.encode(errorResult))
 end)
 
 -- Gang
@@ -340,10 +328,8 @@ end)
 --     end
 
 --     local success, errorResult = player.Functions.SetGang(args[locale('command.setgang.params.gang.name')], args[locale('command.setgang.params.grade.name')] or 0)
---     assert(success, errorResult)
+--     assert(success, json.encode(errorResult))
 -- end)
-
--- Out of Character Chat
 
 lib.addCommand('ooc', {
     help = locale('command.ooc.help')
@@ -387,8 +373,6 @@ lib.addCommand('ooc', {
     end
 end)
 
--- Me command
-
 lib.addCommand('me', {
     help = locale('command.me.help'),
     params = {
@@ -406,13 +390,9 @@ lib.addCommand('me', {
     playerState:set('me', nil, true)
 end)
 
--- ID command
-
 lib.addCommand('id', {help = locale('info.check_id')}, function(source)
     Notify(source, 'ID: ' .. source)
 end)
-
--- Character commands
 
 lib.addCommand('logout', {
     help = locale('info.logout_command_help'),

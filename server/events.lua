@@ -206,5 +206,4 @@ RegisterNetEvent('QBCore:ToggleDuty', function()
         player.Functions.SetJobDuty(true)
         Notify(src, locale('info.on_duty'))
     end
-    TriggerClientEvent('QBCore:Client:SetDuty', src, player.PlayerData.job.onduty)
 end)
