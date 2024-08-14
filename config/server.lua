@@ -60,25 +60,13 @@ return {
     ---@alias ColumnName string
     ---@type [TableName, ColumnName][]
     characterDataTables = {
-        {'properties', 'owner'},
         {'apartments', 'citizenid'},
-        {'bank_accounts_new', 'id'},
-        {'playerskins', 'citizenid'},
-        {'player_houses', 'citizenid'},
-        {'player_mails', 'citizenid'},
-        {'player_outfits', 'citizenid'},
-        {'player_vehicles', 'citizenid'},
-        {'player_groups', 'citizenid'},
+        {'appearance', 'id'},
+        {'outfits', 'player_id'},
         {'players', 'citizenid'},
-        {'npwd_calls', 'identifier'},
-        {'npwd_darkchat_channel_members', 'user_identifier'},
-        {'npwd_marketplace_listings', 'identifier'},
-        {'npwd_messages_participants', 'participant'},
-        {'npwd_notes', 'identifier'},
-        {'npwd_phone_contacts', 'identifier'},
-        {'npwd_phone_gallery', 'identifier'},
-        {'npwd_twitter_profiles', 'identifier'},
-        {'npwd_match_profiles', 'identifier'},
+        {'player_groups', 'citizenid'},
+        {'player_houses', 'citizenid'},
+        {'player_vehicles', 'citizenid'},
     }, -- Rows to be deleted when the character is deleted
 
     server = {
@@ -87,10 +75,10 @@ return {
         closedReason = 'Server Closed', -- Reason message to display when people can't join the server
         whitelist = false, -- Enable or disable whitelist on the server
         whitelistPermission = 'admin', -- Permission that's able to enter the server when the whitelist is on
-        discord = '', -- Discord invite link
-        checkDuplicateLicense = true, -- Check for duplicate rockstar license on join
+        discord = 'https://initialrp.fr/', -- Discord invite link
+        checkDuplicateLicense = false, -- Check for duplicate rockstar license on join
         ---@deprecated use cfg ACE system instead
-        permissions = { 'god', 'admin', 'mod' }, -- Add as many groups as you want here after creating them in your server.cfg
+        permissions = { 'owner', 'dev', 'superadmin', 'admin', 'mod', 'helper' }, -- Add as many groups as you want here after creating them in your server.cfg
     },
 
     characters = {
@@ -103,18 +91,13 @@ return {
 
     -- this configuration is for core events only. putting other webhooks here will have no effect
     logging = {
-        webhook = {
-            ['default'] = nil, -- default
-            ['joinleave'] = nil, -- default
-            ['ooc'] = nil, -- default
-            ['anticheat'] = nil, -- default
-            ['playermoney'] = nil, -- default
-        },
+        webhook = {},
         role = {} -- Role to tag for high priority logs. Roles use <@%roleid> and users/channels are <@userid/channelid>
     },
 
     giveVehicleKeys = function(src, plate, vehicle)
-        return exports.qbx_vehiclekeys:GiveKeys(src, plate)
+        -- return exports.qbx_vehiclekeys:GiveKeys(src, plate)
+        return false
     end,
 
     getSocietyAccount = function(accountName)
