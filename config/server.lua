@@ -96,8 +96,7 @@ return {
     },
 
     giveVehicleKeys = function(src, plate, vehicle)
-        -- return exports.qbx_vehiclekeys:GiveKeys(src, plate)
-        return false
+        return exports.mm_carkeys:GiveTempKeys(src, plate)
     end,
 
     getSocietyAccount = function(accountName)
