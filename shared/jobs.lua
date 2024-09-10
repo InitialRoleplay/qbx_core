@@ -251,4 +251,29 @@ return {
             },
         },
     },
+
+    ['dynasty'] = {
+        label = 'Dynasty 8',
+        defaultDuty = true,
+        offDutyPay = false,
+        grades = {
+            [0] = {
+                name = 'Recrue',
+            },
+            [1] = {
+                name = 'Agent Immobilier',
+            },
+            [2] = {
+                name = 'Agent Immobilier Senior',
+            },
+            [3] = {
+                name = 'Agent Immobilier Expert',
+            },
+            [4] = {
+                name = 'Directeur',
+                isboss = true,
+                bankAuth = true,
+            },
+        },
+    },
 }
