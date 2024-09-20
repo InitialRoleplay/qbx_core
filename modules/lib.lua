@@ -4,6 +4,7 @@ local qbx = {}
 qbx.string = {}
 qbx.math = {}
 qbx.table = {}
+qbx.array = {}
 
 qbx.armsWithoutGloves = lib.table.freeze({
     male = lib.table.freeze({
@@ -145,6 +146,21 @@ function qbx.table.mapBySubfield(tble, subfield)
     end
 
     return map
+end
+
+---Returns true if the given array contains the given value.
+---@generic T
+---@param arr T[]
+---@param val T
+---@return boolean
+function qbx.array.contains(arr, val)
+    for i = 1, #arr do
+        if arr[i] == val then
+            return true
+        end
+    end
+
+    return false
 end
 
 ---Returns the number plate of the given vehicle.
@@ -300,7 +316,7 @@ if isServer then
         end
 
         local netId = NetworkGetNetworkIdFromEntity(veh)
-
+        exports.qbx_core:EnablePersistence(veh)
         return netId, veh
     end
 else
